@@ -138,14 +138,30 @@ nav .ic{font-size:20px;line-height:1}
 </div></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
+import {
+ initializeFirestore, persistentLocalCache, persistentSingleTabManager,
+ collection, doc, addDoc, updateDoc, onSnapshot, increment
+} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+
+const firebaseConfig={
+ apiKey:"AIzaSyB9USMOwqfG7zj1RPe3amngbT7VDu_L0KI",
+ authDomain:"catmap-9b132.firebaseapp.com",
+ projectId:"catmap-9b132",
+ storageBucket:"catmap-9b132.firebasestorage.app",
+ messagingSenderId:"619721910675",
+ appId:"1:619721910675:web:56b76e74dded2d4e0de066"
+};
+const app=initializeApp(firebaseConfig);
+const db=initializeFirestore(app,{localCache:persistentLocalCache({tabManager:persistentSingleTabManager()})});
+const catsCol=collection(db,'cats');
+
 const COLORS={Gris:'#9b9b9b',Roux:'#d2691e',Noir:'#2c2c2c',Blanc:'#e8e6e1',Tigré:'#8b6f47',Bicolore:'#6b6b6b'};
-const KEY='catmap.v1';
-let photo=null,color=null,status=null,pos=null,map=null,layer=null,pending=null;
+let photo=null,color=null,status=null,pos=null,map=null,layer=null,pending=null,view='add';
+let cats=[];
 
 const $=s=>document.querySelector(s);
-const load=()=>JSON.parse(localStorage.getItem(KEY)||'[]');
-const save=c=>localStorage.setItem(KEY,JSON.stringify(c));
 
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2600)}
 
@@ -195,7 +211,7 @@ $('#go').onclick=()=>{
  if(!status){$('#e-st').classList.add('on');ok=false}
  if(!pos){toast('Position requise — autorise le GPS');geo();ok=false}
  if(!ok)return;
- const near=load().filter(c=>c.color===color&&dist(pos.lat,pos.lng,c.lat,c.lng)<300)
+ const near=cats.filter(c=>c.color===color&&dist(pos.lat,pos.lng,c.lat,c.lng)<300)
    .sort((a,b)=>dist(pos.lat,pos.lng,a.lat,a.lng)-dist(pos.lat,pos.lng,b.lat,b.lng));
  if(near.length){pending=near[0];
   $('#m-col').textContent=color.toLowerCase();
@@ -204,16 +220,15 @@ $('#go').onclick=()=>{
  else add()};
 
 function add(){
- const c=load();
- c.push({id:Date.now(),color,status,photo,lat:pos.lat,lng:pos.lng,
+ addDoc(catsCol,{color,status,photo,lat:pos.lat,lng:pos.lng,
   first:new Date().toISOString(),last:new Date().toISOString(),seen:1});
- save(c);reset();toast('Chat ajouté à la carte')}
+ reset();toast('Chat ajouté à la carte')}
 
 $('#m-yes').onclick=()=>{
- const c=load(),i=c.findIndex(x=>x.id===pending.id);
- if(i>-1){c[i].seen++;c[i].last=new Date().toISOString();
-  if(status==='Perdu')c[i].status='Perdu';c[i].lat=pos.lat;c[i].lng=pos.lng}
- save(c);$('#sh-match').classList.remove('on');reset();toast('Observation ajoutée')};
+ const upd={seen:increment(1),last:new Date().toISOString(),lat:pos.lat,lng:pos.lng};
+ if(status==='Perdu')upd.status='Perdu';
+ updateDoc(doc(db,'cats',pending.id),upd);
+ $('#sh-match').classList.remove('on');reset();toast('Observation ajoutée')};
 $('#m-no').onclick=()=>{$('#sh-match').classList.remove('on');add()};
 
 function reset(){photo=color=status=null;pending=null;
@@ -224,11 +239,10 @@ function reset(){photo=color=status=null;pending=null;
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('nav button').forEach(x=>x.classList.remove('on'));
  document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));
- b.classList.add('on');const v=b.dataset.v;$('#v-'+v).classList.add('on');
- if(v==='map')drawMap();if(v==='list')drawList()});
+ b.classList.add('on');view=b.dataset.v;$('#v-'+view).classList.add('on');
+ if(view==='map')drawMap();if(view==='list')drawList()});
 
 function drawMap(){
- const c=load();
  if(!map){
   map=L.map('map',{zoomControl:false}).setView(pos?[pos.lat,pos.lng]:[49.4,2.3],15);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -239,15 +253,15 @@ function drawMap(){
  if(layer)layer.remove();
  layer=L.layerGroup().addTo(map);
  if(pos)L.circleMarker([pos.lat,pos.lng],{radius:7,color:'#1a73e8',fillColor:'#1a73e8',fillOpacity:1,weight:2}).addTo(layer);
- c.forEach(k=>{
+ cats.forEach(k=>{
   const m=L.circleMarker([k.lat,k.lng],{radius:11,color:k.status==='Perdu'?'#d93025':'#fff',
    weight:3,fillColor:COLORS[k.color]||'#999',fillOpacity:1}).addTo(layer);
   m.on('click',()=>detail(k.id))});
- if(c.length)map.fitBounds(L.latLngBounds(c.map(k=>[k.lat,k.lng])).pad(.4),{maxZoom:16});
+ if(cats.length)map.fitBounds(L.latLngBounds(cats.map(k=>[k.lat,k.lng])).pad(.4),{maxZoom:16});
 }
 
 function drawList(){
- const c=load().sort((a,b)=>new Date(b.last)-new Date(a.last));
+ const c=[...cats].sort((a,b)=>new Date(b.last)-new Date(a.last));
  if(!c.length){$('#list-pad').innerHTML='<div class="empty">Aucun chat signalé.<br>Commence par en photographier un.</div>';return}
  const lost=c.filter(k=>k.status==='Perdu').length;
  $('#list-pad').innerHTML=
@@ -258,11 +272,11 @@ function drawList(){
    <div class="dot" style="background:${COLORS[k.color]||'#999'}"></div>
    <div><b>${k.color}</b><small>${k.seen} obs. · ${pos?fmt(dist(pos.lat,pos.lng,k.lat,k.lng)):''}</small></div>
    <span class="badge ${k.status==='Perdu'?'lost':''}">${k.status}</span></div>`).join('')}</div>`;
- document.querySelectorAll('.item').forEach(i=>i.onclick=()=>detail(+i.dataset.id));
+ document.querySelectorAll('.item').forEach(i=>i.onclick=()=>detail(i.dataset.id));
 }
 
 function detail(id){
- const k=load().find(x=>x.id===id);if(!k)return;
+ const k=cats.find(x=>x.id===id);if(!k)return;
  $('#d-title').textContent=k.color+' · '+k.status;
  $('#d-img').src=k.photo;
  $('#d-rows').innerHTML=
@@ -274,6 +288,12 @@ function detail(id){
 
 $('#d-close').onclick=()=>$('#sh-det').classList.remove('on');
 document.querySelectorAll('.sheet').forEach(s=>s.onclick=e=>{if(e.target===s)s.classList.remove('on')});
+
+onSnapshot(catsCol,snap=>{
+ cats=snap.docs.map(d=>({id:d.id,...d.data()}));
+ if(view==='map'&&map)drawMap();
+ if(view==='list')drawList();
+},()=>toast('Connexion au serveur impossible — mode hors ligne'));
 
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
