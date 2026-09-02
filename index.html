@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#ee5a6f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CatMap">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<title>CatMap</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f5f5f7;color:#1a1a1a;overscroll-behavior:none}
+.app{display:flex;flex-direction:column;height:100dvh}
+header{background:#ee5a6f;color:#fff;padding:calc(env(safe-area-inset-top) + 12px) 16px 12px;text-align:center;font-size:18px;font-weight:600;flex-shrink:0}
+main{flex:1;overflow:hidden;position:relative}
+.view{position:absolute;inset:0;overflow-y:auto;display:none;-webkit-overflow-scrolling:touch}
+.view.on{display:block}
+#map{width:100%;height:100%}
+nav{display:flex;background:#fff;border-top:1px solid #e5e5e5;padding-bottom:env(safe-area-inset-bottom);flex-shrink:0}
+nav button{flex:1;border:0;background:none;padding:10px 4px;font-size:11px;color:#8a8a8e;display:flex;flex-direction:column;align-items:center;gap:3px;font-family:inherit}
+nav button.on{color:#ee5a6f}
+nav .ic{font-size:20px;line-height:1}
+.pad{padding:16px 16px 32px}
+.lbl{font-size:12px;font-weight:600;color:#6a6a6e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;display:block}
+.grp{margin-bottom:22px}
+.shot{border:2px dashed #d1d1d6;border-radius:14px;padding:34px 16px;text-align:center;background:#fff;cursor:pointer}
+.shot .ic{font-size:38px;display:block;margin-bottom:6px}
+.shot span.t{font-size:13px;color:#6a6a6e}
+.shot input{display:none}
+#prev{width:100%;border-radius:14px;max-height:280px;object-fit:cover;display:none;margin-top:10px}
+.cols{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.col{aspect-ratio:1.35;border:2px solid transparent;border-radius:12px;font-size:12px;font-weight:600;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.45);font-family:inherit}
+.col.on{border-color:#1a1a1a;transform:scale(.96)}
+.sts{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.st{padding:13px 4px;border:1px solid #d1d1d6;border-radius:12px;background:#fff;font-size:13px;font-weight:500;font-family:inherit;color:#1a1a1a}
+.st.on{background:#ee5a6f;color:#fff;border-color:#ee5a6f}
+.st.lost.on{background:#d93025;border-color:#d93025}
+.geo{background:#fff;border:1px solid #e5e5e5;border-radius:12px;padding:12px 14px;font-size:13px;color:#6a6a6e;display:flex;align-items:center;gap:8px}
+.geo.ok{color:#1a7f37}
+.go{width:100%;padding:16px;background:#ee5a6f;color:#fff;border:0;border-radius:14px;font-size:16px;font-weight:600;font-family:inherit;margin-top:6px}
+.go:disabled{opacity:.45}
+.toast{position:fixed;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom) + 76px);background:#1a1a1a;color:#fff;padding:13px 16px;border-radius:12px;font-size:13px;text-align:center;z-index:900;opacity:0;transition:opacity .25s;pointer-events:none}
+.toast.on{opacity:.95}
+.sheet{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:none;align-items:flex-end}
+.sheet.on{display:flex}
+.card{background:#fff;width:100%;border-radius:20px 20px 0 0;padding:22px 18px calc(env(safe-area-inset-bottom) + 22px);max-height:88dvh;overflow-y:auto}
+.card h2{font-size:17px;margin-bottom:8px}
+.card p{font-size:13px;color:#6a6a6e;line-height:1.5;margin-bottom:14px}
+.card img{width:100%;height:220px;object-fit:cover;border-radius:14px;margin-bottom:16px;background:#eee}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.two button{padding:15px;border-radius:12px;border:1px solid #d1d1d6;background:#fff;font-size:14px;font-weight:600;font-family:inherit;color:#1a1a1a}
+.two .y{background:#1a7f37;color:#fff;border-color:#1a7f37}
+.row{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid #f0f0f0;font-size:14px}
+.row:last-child{border:0}
+.row span:first-child{color:#8a8a8e}
+.row span:last-child{font-weight:600}
+.stat{background:#fff;border-radius:14px;padding:18px;display:grid;grid-template-columns:repeat(3,1fr);text-align:center;margin-bottom:18px}
+.stat b{display:block;font-size:26px;color:#ee5a6f}
+.stat small{font-size:11px;color:#8a8a8e}
+.list{background:#fff;border-radius:14px;overflow:hidden}
+.item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid #f0f0f0}
+.item:last-child{border:0}
+.dot{width:34px;height:34px;border-radius:50%;flex-shrink:0;border:1px solid rgba(0,0,0,.1)}
+.item div{flex:1;min-width:0}
+.item b{display:block;font-size:14px}
+.item small{font-size:12px;color:#8a8a8e}
+.empty{text-align:center;padding:50px 20px;color:#8a8a8e;font-size:14px}
+.badge{font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;background:#f0f0f0;color:#6a6a6e}
+.badge.lost{background:#fce8e6;color:#d93025}
+.err{color:#d93025;font-size:12px;margin-top:6px;display:none}
+.err.on{display:block}
+</style>
+</head>
+<body>
+<div class="app">
+<header>CatMap</header>
+<main>
+
+<section id="v-add" class="view on"><div class="pad">
+  <div class="grp">
+    <span class="lbl">Photo</span>
+    <label class="shot"><span class="ic">📷</span><span class="t">Prendre une photo du chat</span>
+      <input type="file" id="file" accept="image/*" capture="environment"></label>
+    <img id="prev" alt="">
+    <div class="err" id="e-photo">Ajoute une photo</div>
+  </div>
+  <div class="grp">
+    <span class="lbl">Couleur</span>
+    <div class="cols" id="cols"></div>
+    <div class="err" id="e-col">Choisis une couleur</div>
+  </div>
+  <div class="grp">
+    <span class="lbl">Situation</span>
+    <div class="sts">
+      <button class="st" data-s="Errant">Errant</button>
+      <button class="st" data-s="Promenade">Promenade</button>
+      <button class="st lost" data-s="Perdu">Perdu</button>
+    </div>
+    <div class="err" id="e-st">Choisis une situation</div>
+  </div>
+  <div class="grp">
+    <span class="lbl">Position</span>
+    <div class="geo" id="geo">📍 Localisation en cours…</div>
+  </div>
+  <button class="go" id="go">Signaler ce chat</button>
+</div></section>
+
+<section id="v-map" class="view"><div id="map"></div></section>
+
+<section id="v-list" class="view"><div class="pad" id="list-pad"></div></section>
+
+</main>
+<nav>
+  <button class="on" data-v="add"><span class="ic">📷</span>Signaler</button>
+  <button data-v="map"><span class="ic">🗺️</span>Carte</button>
+  <button data-v="list"><span class="ic">📋</span>Chats</button>
+</nav>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<div class="sheet" id="sh-match"><div class="card">
+  <h2>Chat déjà vu ici</h2>
+  <p>Un chat <b id="m-col"></b> a été signalé à <b id="m-dist"></b> d'ici. C'est le même ?</p>
+  <img id="m-img" alt="">
+  <div class="two"><button class="y" id="m-yes">Oui, le même</button><button id="m-no">Non, un autre</button></div>
+</div></div>
+
+<div class="sheet" id="sh-det"><div class="card">
+  <h2 id="d-title"></h2>
+  <img id="d-img" alt="">
+  <div id="d-rows"></div>
+  <button class="go" id="d-close" style="margin-top:18px">Fermer</button>
+</div></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const COLORS={Gris:'#9b9b9b',Roux:'#d2691e',Noir:'#2c2c2c',Blanc:'#e8e6e1',Tigré:'#8b6f47',Bicolore:'#6b6b6b'};
+const KEY='catmap.v1';
+let photo=null,color=null,status=null,pos=null,map=null,layer=null,pending=null;
+
+const $=s=>document.querySelector(s);
+const load=()=>JSON.parse(localStorage.getItem(KEY)||'[]');
+const save=c=>localStorage.setItem(KEY,JSON.stringify(c));
+
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2600)}
+
+function dist(a,b,c,d){const R=6371e3,p=Math.PI/180,x=(c-a)*p,y=(d-b)*p;
+ const h=Math.sin(x/2)**2+Math.cos(a*p)*Math.cos(c*p)*Math.sin(y/2)**2;
+ return Math.round(2*R*Math.atan2(Math.sqrt(h),Math.sqrt(1-h)))}
+const fmt=m=>m<1000?m+' m':(m/1000).toFixed(1)+' km';
+
+$('#cols').innerHTML=Object.entries(COLORS).map(([n,c])=>
+ `<button class="col" data-c="${n}" style="background:${c}${n==='Blanc'?';color:#333;text-shadow:none':''}">${n}</button>`).join('');
+
+document.querySelectorAll('.col').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('.col').forEach(x=>x.classList.remove('on'));
+ b.classList.add('on');color=b.dataset.c;$('#e-col').classList.remove('on')});
+
+document.querySelectorAll('.st').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('.st').forEach(x=>x.classList.remove('on'));
+ b.classList.add('on');status=b.dataset.s;$('#e-st').classList.remove('on')});
+
+$('#file').onchange=e=>{const f=e.target.files[0];if(!f)return;
+ const img=new Image(),r=new FileReader();
+ r.onload=()=>{img.onload=()=>{
+  const cv=document.createElement('canvas'),max=900;
+  let{width:w,height:h}=img;
+  if(w>h&&w>max){h=h*max/w;w=max}else if(h>max){w=w*max/h;h=max}
+  cv.width=w;cv.height=h;cv.getContext('2d').drawImage(img,0,0,w,h);
+  photo=cv.toDataURL('image/jpeg',.75);
+  $('#prev').src=photo;$('#prev').style.display='block';$('#e-photo').classList.remove('on')};
+  img.src=r.result};
+ r.readAsDataURL(f)};
+
+function geo(){
+ if(!navigator.geolocation){$('#geo').textContent='📍 GPS indisponible';return}
+ navigator.geolocation.getCurrentPosition(p=>{
+  pos={lat:p.coords.latitude,lng:p.coords.longitude};
+  $('#geo').textContent='📍 Position trouvée (±'+Math.round(p.coords.accuracy)+' m)';
+  $('#geo').classList.add('ok')},
+ ()=>{$('#geo').textContent='📍 Position refusée — autorise la localisation'},
+ {enableHighAccuracy:true,timeout:10000});
+}
+geo();
+
+$('#go').onclick=()=>{
+ let ok=true;
+ if(!photo){$('#e-photo').classList.add('on');ok=false}
+ if(!color){$('#e-col').classList.add('on');ok=false}
+ if(!status){$('#e-st').classList.add('on');ok=false}
+ if(!pos){toast('Position requise — autorise le GPS');geo();ok=false}
+ if(!ok)return;
+ const near=load().filter(c=>c.color===color&&dist(pos.lat,pos.lng,c.lat,c.lng)<300)
+   .sort((a,b)=>dist(pos.lat,pos.lng,a.lat,a.lng)-dist(pos.lat,pos.lng,b.lat,b.lng));
+ if(near.length){pending=near[0];
+  $('#m-col').textContent=color.toLowerCase();
+  $('#m-dist').textContent=fmt(dist(pos.lat,pos.lng,pending.lat,pending.lng));
+  $('#m-img').src=pending.photo;$('#sh-match').classList.add('on')}
+ else add()};
+
+function add(){
+ const c=load();
+ c.push({id:Date.now(),color,status,photo,lat:pos.lat,lng:pos.lng,
+  first:new Date().toISOString(),last:new Date().toISOString(),seen:1});
+ save(c);reset();toast('Chat ajouté à la carte')}
+
+$('#m-yes').onclick=()=>{
+ const c=load(),i=c.findIndex(x=>x.id===pending.id);
+ if(i>-1){c[i].seen++;c[i].last=new Date().toISOString();
+  if(status==='Perdu')c[i].status='Perdu';c[i].lat=pos.lat;c[i].lng=pos.lng}
+ save(c);$('#sh-match').classList.remove('on');reset();toast('Observation ajoutée')};
+$('#m-no').onclick=()=>{$('#sh-match').classList.remove('on');add()};
+
+function reset(){photo=color=status=null;pending=null;
+ $('#prev').style.display='none';$('#file').value='';
+ document.querySelectorAll('.col,.st').forEach(b=>b.classList.remove('on'));
+ document.querySelectorAll('.err').forEach(e=>e.classList.remove('on'))}
+
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('nav button').forEach(x=>x.classList.remove('on'));
+ document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));
+ b.classList.add('on');const v=b.dataset.v;$('#v-'+v).classList.add('on');
+ if(v==='map')drawMap();if(v==='list')drawList()});
+
+function drawMap(){
+ const c=load();
+ if(!map){
+  map=L.map('map',{zoomControl:false}).setView(pos?[pos.lat,pos.lng]:[49.4,2.3],15);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+   {attribution:'© OpenStreetMap',maxZoom:19}).addTo(map);
+  L.control.zoom({position:'bottomright'}).addTo(map);
+ }
+ setTimeout(()=>map.invalidateSize(),80);
+ if(layer)layer.remove();
+ layer=L.layerGroup().addTo(map);
+ if(pos)L.circleMarker([pos.lat,pos.lng],{radius:7,color:'#1a73e8',fillColor:'#1a73e8',fillOpacity:1,weight:2}).addTo(layer);
+ c.forEach(k=>{
+  const m=L.circleMarker([k.lat,k.lng],{radius:11,color:k.status==='Perdu'?'#d93025':'#fff',
+   weight:3,fillColor:COLORS[k.color]||'#999',fillOpacity:1}).addTo(layer);
+  m.on('click',()=>detail(k.id))});
+ if(c.length)map.fitBounds(L.latLngBounds(c.map(k=>[k.lat,k.lng])).pad(.4),{maxZoom:16});
+}
+
+function drawList(){
+ const c=load().sort((a,b)=>new Date(b.last)-new Date(a.last));
+ if(!c.length){$('#list-pad').innerHTML='<div class="empty">Aucun chat signalé.<br>Commence par en photographier un.</div>';return}
+ const lost=c.filter(k=>k.status==='Perdu').length;
+ $('#list-pad').innerHTML=
+ `<div class="stat"><div><b>${c.length}</b><small>chats</small></div>
+  <div><b>${c.reduce((s,k)=>s+k.seen,0)}</b><small>observations</small></div>
+  <div><b>${lost}</b><small>perdus</small></div></div>
+  <div class="list">${c.map(k=>`<div class="item" data-id="${k.id}">
+   <div class="dot" style="background:${COLORS[k.color]||'#999'}"></div>
+   <div><b>${k.color}</b><small>${k.seen} obs. · ${pos?fmt(dist(pos.lat,pos.lng,k.lat,k.lng)):''}</small></div>
+   <span class="badge ${k.status==='Perdu'?'lost':''}">${k.status}</span></div>`).join('')}</div>`;
+ document.querySelectorAll('.item').forEach(i=>i.onclick=()=>detail(+i.dataset.id));
+}
+
+function detail(id){
+ const k=load().find(x=>x.id===id);if(!k)return;
+ $('#d-title').textContent=k.color+' · '+k.status;
+ $('#d-img').src=k.photo;
+ $('#d-rows').innerHTML=
+ `<div class="row"><span>Observations</span><span>${k.seen}</span></div>
+  <div class="row"><span>Première fois</span><span>${new Date(k.first).toLocaleDateString('fr-FR')}</span></div>
+  <div class="row"><span>Dernière fois</span><span>${new Date(k.last).toLocaleDateString('fr-FR')}</span></div>
+  ${pos?`<div class="row"><span>Distance</span><span>${fmt(dist(pos.lat,pos.lng,k.lat,k.lng))}</span></div>`:''}`;
+ $('#sh-det').classList.add('on')}
+
+$('#d-close').onclick=()=>$('#sh-det').classList.remove('on');
+document.querySelectorAll('.sheet').forEach(s=>s.onclick=e=>{if(e.target===s)s.classList.remove('on')});
+
+if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
+</script>
+</body>
+</html>
