@@ -1,6 +1,8 @@
 # CatMap
 
-PWA de signalement collaboratif des chats de quartier. L'utilisateur photographie un chat qu'il croise, indique sa couleur et sa situation, et le chat apparaît sur une carte partagée. Objectif principal : retrouver les chats perdus grâce aux observations des voisins.
+PWA de recensement collaboratif des chats de quartier. L'utilisateur photographie un chat qu'il croise, indique sa couleur et sa situation, et le chat rejoint une carte partagée. On y répertorie aussi les lieux utiles : gamelles, points d'eau, abris, zones dangereuses.
+
+**La fonction première est le recensement**, pas les chats perdus. Le signalement d'un chat perdu est une fonction secondaire qui s'appuie sur l'atlas déjà constitué. Cette hiérarchie est délibérée : une app « chats perdus » n'est ouverte que par ceux qui viennent d'en perdre un, alors qu'un recensement s'utilise tous les jours — et le jour où quelqu'un perd son chat, la carte est déjà peuplée. Ne pas remettre les chats perdus au centre.
 
 Le porteur du projet n'est pas développeur. Explique les choix techniques en français simple, propose la meilleure option plutôt que d'attendre des instructions précises, et signale quand une demande part dans une mauvaise direction.
 
@@ -49,6 +51,25 @@ Collection `cats` — fiche légère, chargée entièrement à chaque ouverture 
 }
 ```
 
+`spots` est la liste des positions observées, plafonnée à 12 (`.slice(-12)`) et
+arrondie à 5 décimales. C'est elle qui fait vivre la **zone de territoire** : le
+centre des observations donne le cœur, leur dispersion la taille, et le terme
+`220/√n` l'incertitude restante. Une seule observation donne un large cercle en
+pointillés ; chaque observation supplémentaire le resserre. Ne pas remplacer ce
+tableau par une simple dernière position — c'est le mécanisme central de l'app.
+
+Collection `places` — lieux utiles, indépendants des chats :
+
+```js
+{
+  type: 'Gamelle',        // Gamelle | Eau | Abri | Danger
+  lat: 49.1917, lng: 2.4083,
+  first: '...', last: '...',
+  ok: 1,                  // nombre de confirmations « c'est toujours là »
+  note: 'Derrière le local à vélos'   // optionnel, PUBLIC
+}
+```
+
 Collection `photos` — un document par chat, même id que la fiche, chargé
 seulement à l'ouverture d'une fiche : `{ data: 'data:image/jpeg;base64,...' }`
 (photo 900px, ~250 Ko).
@@ -82,6 +103,14 @@ de passe, ce qui supprime toute friction à l'entrée. En contrepartie personne 
 peut modifier ou supprimer sa propre fiche, et il n'y a aucune modération. C'est
 le prochain arbitrage à faire si l'usage décolle (Firebase Auth anonyme donnerait
 une identité stable sans friction).
+
+**La progression (XP, niveaux, objectifs) est locale à l'appareil**, dans
+`localStorage` sous `catmap.me.v1`. C'est une conséquence directe de l'absence de
+comptes, pas un oubli : il ne peut donc pas y avoir de classement entre
+utilisateurs. L'interface le dit explicitement dans l'onglet « Moi » plutôt que de
+laisser croire à une compétition. Le seul chiffre réellement collectif est le
+compteur du quartier, calculé depuis Firestore. Ne pas ajouter de classement sans
+ajouter d'abord une vraie authentification.
 
 **Pas d'IA de reconnaissance de couleur ou de race.** La sélection manuelle suffit
 et produit de meilleures données au départ.

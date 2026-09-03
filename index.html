@@ -8,9 +8,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="CatMap">
-<meta name="description" content="Signale les chats de ton quartier et aide tes voisins à retrouver les leurs. Une carte partagée, alimentée par tout le monde.">
+<meta name="description" content="La carte des chats de ton quartier : recense ceux que tu croises, repère les gamelles et les points d'eau, aide à retrouver ceux qui se perdent.">
 <meta property="og:title" content="CatMap — la carte des chats du quartier">
-<meta property="og:description" content="Un chat perdu ? Signale-le. Un chat croisé ? Photographie-le. Tes voisins voient la même carte que toi.">
+<meta property="og:description" content="Recense les chats que tu croises, repère les gamelles et les coins dangereux. Tes voisins voient la même carte que toi.">
 <meta property="og:type" content="website">
 <meta property="og:image" content="icon-512.png">
 <meta name="twitter:card" content="summary">
@@ -26,6 +26,8 @@
  --brand:#4b40d9; --brand-ink:#fff; --brand-soft:#ecebfd;
  --danger:#d92d20; --danger-ink:#fff; --danger-soft:#fdeceb;
  --ok:#15803d; --ok-soft:#e6f4ea;
+ --gold:#b7791f; --gold-soft:#fdf3e0;
+ --water:#0a6fb5; --water-soft:#e4f2fb;
  --shadow:0 1px 2px rgba(26,23,20,.05),0 10px 28px rgba(26,23,20,.07);
  --shadow-lg:0 20px 50px rgba(26,23,20,.16);
  --r:16px; --r-lg:22px; --r-xl:28px;
@@ -38,6 +40,8 @@
  --brand:#8f86ff; --brand-ink:#141033; --brand-soft:#262150;
  --danger:#f87171; --danger-ink:#2b1110; --danger-soft:#3a1c1a;
  --ok:#5ddb92; --ok-soft:#16301f;
+ --gold:#e3b95f; --gold-soft:#33270f;
+ --water:#6cb6e8; --water-soft:#11283a;
  --shadow:0 1px 2px rgba(0,0,0,.5),0 10px 28px rgba(0,0,0,.4);
  --shadow-lg:0 20px 50px rgba(0,0,0,.6);
 }
@@ -51,13 +55,14 @@ button,input{font-family:inherit;color:inherit}
 svg{display:block}
 
 .app{display:flex;flex-direction:column;height:100dvh}
-
 header{display:flex;align-items:center;gap:8px;flex-shrink:0;
  padding:calc(env(safe-area-inset-top) + 14px) 20px 12px}
 header .mark{width:26px;height:26px;border-radius:8px;background:var(--brand);
  color:var(--brand-ink);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 header .mark svg{width:16px;height:16px}
-header b{font-size:17px;font-weight:750;letter-spacing:-.03em}
+header b{font-size:17px;font-weight:750;letter-spacing:-.03em;flex:1}
+header .lvl{font-size:11.5px;font-weight:700;color:var(--brand);background:var(--brand-soft);
+ padding:5px 11px;border-radius:100px}
 
 main{flex:1;overflow:hidden;position:relative}
 .view{position:absolute;inset:0;overflow-y:auto;opacity:0;visibility:hidden;
@@ -65,7 +70,6 @@ main{flex:1;overflow:hidden;position:relative}
 .view.on{opacity:1;visibility:visible}
 .pad{padding:4px 20px 32px}
 
-/* ---- barre de navigation ---- */
 nav{display:flex;gap:4px;flex-shrink:0;padding:8px 14px calc(env(safe-area-inset-bottom) + 8px);
  background:var(--bg);border-top:1px solid var(--line)}
 nav button{flex:1;border:0;background:none;padding:8px 4px 6px;border-radius:14px;
@@ -80,30 +84,75 @@ nav button:active{transform:scale(.94)}
  display:flex;align-items:center;justify-content:center;padding:0 5px;
  box-shadow:0 0 0 2.5px var(--bg)}
 
-/* ---- parcours de signalement ---- */
-.wiz{display:flex;flex-direction:column;height:100%}
-.wiz-bar{display:flex;gap:5px;padding:6px 20px 14px;flex-shrink:0}
-.wiz-bar .d{height:3.5px;flex:1;border-radius:2px;background:var(--sunk);transition:background .3s}
-.wiz-bar .d.done,.wiz-bar .d.on{background:var(--brand)}
-.wiz-bar .d.on{opacity:1}
-.wiz-bar .d.done{opacity:.4}
-.wiz-track{flex:1;overflow:hidden;position:relative}
-.wiz-steps{display:flex;width:500%;height:100%;transition:transform .4s cubic-bezier(.32,.72,0,1)}
-.wiz-step{width:20%;height:100%;overflow-y:auto;
- padding:2px 20px calc(env(safe-area-inset-bottom) + 20px);-webkit-overflow-scrolling:touch}
-.wiz-head{margin-bottom:22px}
-.wiz-n{font-size:11.5px;font-weight:700;color:var(--ink-3);letter-spacing:.02em}
-.wiz-head h2{font-size:27px;line-height:1.12;margin-top:5px;font-weight:760;letter-spacing:-.035em}
-.wiz-head p{font-size:14.5px;color:var(--ink-2);margin-top:7px;line-height:1.45}
-.wiz-nav{display:flex;gap:10px;margin-top:22px}
+/* ---- carte ---- */
+#map{width:100%;height:100%;background:var(--sunk)}
+.leaflet-container{font-family:inherit;background:var(--sunk)}
+/* Les tuiles OpenStreetMap sont libres et sans clé, mais très colorées.
+   On les désature ici pour obtenir un fond neutre sur lequel les marqueurs
+   ressortent — le filtre ne touche que les tuiles, pas les marqueurs. */
+.leaflet-tile-pane{filter:grayscale(.95) contrast(1.08)}
+@media (prefers-color-scheme:dark){
+ /* après inversion le fond et les routes retombent tous les deux près du noir :
+    on remonte la luminosité puis on réduit le contraste pour les redécoller */
+ .leaflet-tile-pane{filter:grayscale(1) invert(1) brightness(1.4) contrast(.8)}
+}
+.leaflet-control-attribution{font-size:9px!important;
+ background:color-mix(in srgb,var(--surface) 82%,transparent)!important;
+ color:var(--ink-3)!important;border-radius:6px 0 0 0;padding:2px 5px!important}
+.leaflet-control-attribution a{color:var(--ink-2)!important}
+.pin{background:none!important;border:0!important}
+.pin i{display:block;width:100%;height:100%;border-radius:50%;background-size:cover;
+ background-position:center;background-color:var(--surface-2);
+ border:3px solid var(--surface);box-shadow:0 3px 12px rgba(0,0,0,.3)}
+.pin i.lost{border-color:var(--danger);
+ box-shadow:0 0 0 0 color-mix(in srgb,var(--danger) 55%,transparent),0 3px 12px rgba(0,0,0,.3);
+ animation:ping 1.9s ease-out infinite}
+@keyframes ping{
+ 0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--danger) 55%,transparent),0 3px 12px rgba(0,0,0,.3)}
+ 70%{box-shadow:0 0 0 14px transparent,0 3px 12px rgba(0,0,0,.3)}
+ 100%{box-shadow:0 0 0 0 transparent,0 3px 12px rgba(0,0,0,.3)}}
+.pin i.found{opacity:.45}
+.me i{display:block;width:100%;height:100%;border-radius:50%;background:#2f7cf6;
+ border:3px solid #fff;box-shadow:0 0 0 7px rgba(47,124,246,.16),0 2px 8px rgba(0,0,0,.35)}
+.plc{background:none!important;border:0!important}
+.plc i{display:flex;align-items:center;justify-content:center;width:100%;height:100%;
+ border-radius:11px;border:2.5px solid var(--surface);box-shadow:0 2px 9px rgba(0,0,0,.3);color:#fff}
+.plc i svg{width:17px;height:17px;stroke-width:2}
+.plc i.Gamelle{background:#b7791f}
+.plc i.Eau{background:#0a6fb5}
+.plc i.Abri{background:#15803d}
+.plc i.Danger{background:#d92d20}
+
+.map-ui{position:absolute;z-index:500;left:14px;right:14px;top:14px;display:flex;gap:7px;
+ pointer-events:none;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.map-ui::-webkit-scrollbar{display:none}
+.chip{pointer-events:auto;flex-shrink:0;border:1px solid var(--line);
+ background:color-mix(in srgb,var(--surface) 92%,transparent);
+ -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+ color:var(--ink);border-radius:100px;padding:9px 14px;font-size:12.5px;font-weight:650;
+ box-shadow:var(--shadow);transition:transform .14s}
+.chip:active{transform:scale(.95)}
+.chip.on{background:var(--brand);color:var(--brand-ink);border-color:transparent}
+.locate{position:absolute;z-index:500;right:14px;bottom:96px;width:46px;height:46px;border-radius:50%;
+ border:1px solid var(--line);background:color-mix(in srgb,var(--surface) 92%,transparent);
+ -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+ color:var(--ink);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);
+ transition:transform .14s}
+.locate:active{transform:scale(.92)}
+.locate svg{width:20px;height:20px;stroke-width:1.9}
+.fab{position:absolute;z-index:500;left:50%;transform:translateX(-50%);bottom:20px;
+ display:flex;align-items:center;gap:8px;padding:15px 24px;border:0;border-radius:100px;
+ background:var(--brand);color:var(--brand-ink);font-size:15.5px;font-weight:730;
+ box-shadow:0 8px 26px color-mix(in srgb,var(--brand) 42%,transparent);transition:transform .15s}
+.fab:active{transform:translateX(-50%) scale(.95)}
+.fab svg{width:19px;height:19px;stroke-width:2.4}
 
 /* ---- boutons ---- */
 .go{width:100%;padding:17px;background:var(--brand);color:var(--brand-ink);border:0;
- border-radius:var(--r);font-size:16px;font-weight:700;letter-spacing:-.01em;margin-top:10px;
+ border-radius:var(--r);font-size:16px;font-weight:700;margin-top:10px;
  transition:transform .14s,opacity .2s}
 .go:active:not(:disabled){transform:scale(.975)}
 .go:disabled{opacity:.32}
-.wiz-nav .go{margin-top:0}
 .back{border:0;background:var(--surface-2);color:var(--ink-2);font-size:15px;font-weight:650;
  padding:17px 20px;border-radius:var(--r);flex-shrink:0;transition:transform .14s}
 .back:active{transform:scale(.95)}
@@ -111,10 +160,29 @@ nav button:active{transform:scale(.94)}
  border-radius:var(--r);font-size:14.5px;font-weight:650;color:var(--ink-2);transition:transform .14s}
 .ghost:active{transform:scale(.975)}
 
-/* ---- prise de photo ---- */
+/* ---- parcours ---- */
+.wiz{display:flex;flex-direction:column;height:100%}
+.wiz-top{display:flex;align-items:center;gap:12px;padding:6px 20px 12px;flex-shrink:0}
+.close{width:34px;height:34px;border-radius:50%;border:0;background:var(--surface-2);
+ color:var(--ink-2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.close svg{width:16px;height:16px;stroke-width:2.4}
+.wiz-bar{display:flex;gap:5px;flex:1}
+.wiz-bar .d{height:3.5px;flex:1;border-radius:2px;background:var(--sunk);transition:background .3s}
+.wiz-bar .d.done,.wiz-bar .d.on{background:var(--brand)}
+.wiz-bar .d.done{opacity:.4}
+.wiz-track{flex:1;overflow:hidden;position:relative}
+.wiz-steps{display:flex;width:500%;height:100%;transition:transform .4s cubic-bezier(.32,.72,0,1)}
+.wiz-step{width:20%;height:100%;overflow-y:auto;
+ padding:2px 20px calc(env(safe-area-inset-bottom) + 20px);-webkit-overflow-scrolling:touch}
+.wiz-head{margin-bottom:22px}
+.wiz-n{font-size:11.5px;font-weight:700;color:var(--ink-3)}
+.wiz-head h2{font-size:27px;line-height:1.12;margin-top:5px;font-weight:760;letter-spacing:-.035em}
+.wiz-head p{font-size:14.5px;color:var(--ink-2);margin-top:7px;line-height:1.45}
+.wiz-nav{display:flex;gap:10px;margin-top:22px}
+.wiz-nav .go{margin-top:0}
+
 .shot{display:block;border:1.5px dashed var(--line);border-radius:var(--r-lg);
- padding:52px 20px;text-align:center;background:var(--surface);cursor:pointer;
- transition:border-color .2s,transform .14s}
+ padding:52px 20px;text-align:center;background:var(--surface);transition:transform .14s}
 .shot:active{transform:scale(.985)}
 .shot .ico{width:46px;height:46px;margin:0 auto 12px;border-radius:15px;
  background:var(--brand-soft);color:var(--brand);display:flex;align-items:center;justify-content:center}
@@ -127,7 +195,6 @@ nav button:active{transform:scale(.94)}
  box-shadow:var(--shadow)}
 .retake{margin-top:10px}
 
-/* ---- couleurs ---- */
 .cols{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}
 .col{aspect-ratio:1;border:0;border-radius:var(--r-lg);position:relative;overflow:hidden;
  transition:transform .18s;box-shadow:inset 0 0 0 1px rgba(0,0,0,.07)}
@@ -144,7 +211,6 @@ nav button:active{transform:scale(.94)}
 .col .tick svg{width:13px;height:13px;stroke-width:3}
 .col.on .tick{display:flex}
 
-/* ---- situation ---- */
 .sts{display:grid;gap:10px}
 .st{display:flex;align-items:center;gap:13px;text-align:left;padding:16px;
  border:1px solid var(--line);border-radius:var(--r);background:var(--surface);
@@ -154,13 +220,20 @@ nav button:active{transform:scale(.94)}
  display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .16s,color .16s}
 .st .si svg{width:21px;height:21px}
 .st b{display:block;font-size:15.5px;font-weight:680}
-.st span{display:block;font-size:12.5px;color:var(--ink-3);margin-top:1px}
+.st .sd{display:block;font-size:12.5px;color:var(--ink-3);margin-top:1px}
 .st.on{border-color:var(--brand);background:var(--brand-soft)}
 .st.on .si{background:var(--brand);color:var(--brand-ink)}
 .st.lost.on{border-color:var(--danger);background:var(--danger-soft)}
 .st.lost.on .si{background:var(--danger);color:var(--danger-ink)}
+.st.p-Gamelle.on{border-color:var(--gold);background:var(--gold-soft)}
+.st.p-Gamelle.on .si{background:var(--gold);color:#fff}
+.st.p-Eau.on{border-color:var(--water);background:var(--water-soft)}
+.st.p-Eau.on .si{background:var(--water);color:#fff}
+.st.p-Abri.on{border-color:var(--ok);background:var(--ok-soft)}
+.st.p-Abri.on .si{background:var(--ok);color:#fff}
+.st.p-Danger.on{border-color:var(--danger);background:var(--danger-soft)}
+.st.p-Danger.on .si{background:var(--danger);color:var(--danger-ink)}
 
-/* ---- champs ---- */
 .fld{margin-bottom:15px}
 .fld label{display:block;font-size:13.5px;font-weight:680;margin-bottom:7px}
 .fld input{width:100%;padding:16px;border:1px solid var(--line);border-radius:var(--r);
@@ -171,59 +244,14 @@ nav button:active{transform:scale(.94)}
  font-size:12.5px;color:var(--ink-2);line-height:1.5}
 .note svg{width:16px;height:16px;flex-shrink:0;margin-top:1px;stroke-width:1.9}
 
-/* ---- récap ---- */
 .recap{display:flex;gap:14px;align-items:center;background:var(--surface);
  border-radius:var(--r-lg);padding:14px;margin-bottom:14px;box-shadow:var(--shadow)}
 .recap img{width:78px;height:78px;border-radius:14px;object-fit:cover;flex-shrink:0;background:var(--surface-2)}
-.recap-i b{display:block;font-size:18px;font-weight:730;letter-spacing:-.02em;margin-bottom:6px}
+.recap-i b{display:block;font-size:18px;font-weight:730;margin-bottom:6px}
 .geo{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);
  border-radius:var(--r);padding:15px;font-size:13.5px;color:var(--ink-2)}
 .geo svg{width:17px;height:17px;flex-shrink:0;stroke-width:1.9}
 .geo.ok{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 32%,transparent)}
-
-/* ---- carte ---- */
-#map{width:100%;height:100%;background:var(--sunk)}
-.leaflet-container{font-family:inherit;background:var(--sunk)}
-/* Les tuiles OpenStreetMap sont libres et sans clé, mais très colorées.
-   On les désature ici pour obtenir un fond neutre sur lequel les marqueurs
-   ressortent — le filtre ne touche que les tuiles, pas les marqueurs. */
-.leaflet-tile-pane{filter:grayscale(.95) contrast(1.08)}
-@media (prefers-color-scheme:dark){
- /* après inversion le fond et les routes retombent tous les deux près du noir :
-    on remonte la luminosité puis on réduit le contraste pour les redécoller */
- .leaflet-tile-pane{filter:grayscale(1) invert(1) brightness(1.4) contrast(.8)}
-}
-.leaflet-control-attribution{font-size:9px!important;background:color-mix(in srgb,var(--surface) 82%,transparent)!important;
- color:var(--ink-3)!important;border-radius:6px 0 0 0;padding:2px 5px!important}
-.leaflet-control-attribution a{color:var(--ink-2)!important}
-.pin{background:none!important;border:0!important}
-.pin i{display:block;width:100%;height:100%;border-radius:50%;background-size:cover;
- background-position:center;background-color:var(--surface-2);
- border:3px solid var(--surface);box-shadow:0 3px 12px rgba(0,0,0,.3)}
-.pin i.lost{border-color:var(--danger);box-shadow:0 0 0 0 color-mix(in srgb,var(--danger) 55%,transparent),0 3px 12px rgba(0,0,0,.3);
- animation:ping 1.9s ease-out infinite}
-@keyframes ping{
- 0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--danger) 55%,transparent),0 3px 12px rgba(0,0,0,.3)}
- 70%{box-shadow:0 0 0 14px transparent,0 3px 12px rgba(0,0,0,.3)}
- 100%{box-shadow:0 0 0 0 transparent,0 3px 12px rgba(0,0,0,.3)}}
-.pin i.found{opacity:.45}
-.me i{display:block;width:100%;height:100%;border-radius:50%;background:#2f7cf6;
- border:3px solid #fff;box-shadow:0 0 0 7px rgba(47,124,246,.16),0 2px 8px rgba(0,0,0,.35)}
-.map-ui{position:absolute;z-index:500;left:16px;right:16px;top:14px;display:flex;gap:8px;
- pointer-events:none;flex-wrap:wrap}
-.chip{pointer-events:auto;border:1px solid var(--line);background:color-mix(in srgb,var(--surface) 92%,transparent);
- -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
- color:var(--ink);border-radius:100px;padding:9px 15px;font-size:13px;font-weight:650;
- box-shadow:var(--shadow);transition:transform .14s}
-.chip:active{transform:scale(.95)}
-.chip.on{background:var(--brand);color:var(--brand-ink);border-color:transparent}
-.locate{position:absolute;z-index:500;right:16px;bottom:20px;width:48px;height:48px;border-radius:50%;
- border:1px solid var(--line);background:color-mix(in srgb,var(--surface) 92%,transparent);
- -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
- color:var(--ink);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);
- transition:transform .14s}
-.locate:active{transform:scale(.92)}
-.locate svg{width:21px;height:21px;stroke-width:1.9}
 
 /* ---- liste ---- */
 .alert{display:none;gap:13px;align-items:center;background:var(--danger);color:var(--danger-ink);
@@ -233,34 +261,67 @@ nav button:active{transform:scale(.94)}
 .alert svg{width:22px;height:22px;flex-shrink:0;stroke-width:1.9}
 .alert b{display:block;font-size:14.5px;font-weight:720}
 .alert span{display:block;font-size:12.5px;opacity:.9;margin-top:2px;line-height:1.4}
-.stat{display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface);
- border-radius:var(--r-lg);padding:19px 12px;text-align:center;margin-bottom:14px;box-shadow:var(--shadow)}
-.stat b{display:block;font-size:26px;font-weight:740;letter-spacing:-.04em}
-.stat small{display:block;font-size:11.5px;color:var(--ink-3);margin-top:2px}
+.seg{display:flex;gap:6px;background:var(--surface-2);border-radius:100px;padding:4px;margin-bottom:14px}
+.seg button{flex:1;border:0;background:none;padding:10px;border-radius:100px;font-size:13px;
+ font-weight:680;color:var(--ink-2);transition:background .18s,color .18s}
+.seg button.on{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
 .list{background:var(--surface);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow)}
 .item{display:flex;align-items:center;gap:13px;padding:13px 15px;border-bottom:1px solid var(--line);
  transition:background .15s}
 .item:last-child{border:0}
 .item:active{background:var(--surface-2)}
 .dot{width:46px;height:46px;border-radius:14px;flex-shrink:0;background-size:cover;
- background-position:center;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+ background-position:center;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);
+ display:flex;align-items:center;justify-content:center;color:#fff}
+.dot svg{width:21px;height:21px;stroke-width:2}
 .item .txt{flex:1;min-width:0}
-.item b{display:block;font-size:15px;font-weight:680;letter-spacing:-.015em}
+.item b{display:block;font-size:15px;font-weight:680}
 .item small{display:block;font-size:12.5px;color:var(--ink-3);margin-top:1px}
 .item.found .dot,.item.found b{opacity:.5}
 .badge{font-size:11px;font-weight:700;padding:5px 10px;border-radius:100px;
  background:var(--surface-2);color:var(--ink-2);flex-shrink:0}
 .badge.lost{background:var(--danger-soft);color:var(--danger)}
 .badge.ok{background:var(--ok-soft);color:var(--ok)}
-.empty{text-align:center;padding:70px 24px;color:var(--ink-3)}
+.empty{text-align:center;padding:60px 24px;color:var(--ink-3)}
 .empty .ico{width:56px;height:56px;margin:0 auto 16px;border-radius:19px;background:var(--surface-2);
  color:var(--ink-3);display:flex;align-items:center;justify-content:center}
 .empty .ico svg{width:28px;height:28px}
 .empty b{display:block;font-size:16px;color:var(--ink);font-weight:680;margin-bottom:5px}
 .empty span{font-size:13.5px;line-height:1.5}
-.about{margin-top:18px;padding:0 4px}
-.about p{font-size:12.5px;color:var(--ink-3);line-height:1.55}
-.about a{color:var(--brand);font-weight:650;text-decoration:none}
+
+/* ---- profil ---- */
+.lvlcard{background:var(--surface);border-radius:var(--r-xl);padding:22px;margin-bottom:14px;
+ box-shadow:var(--shadow)}
+.lvlcard .top{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+.lvlcard .ring{width:58px;height:58px;border-radius:50%;background:var(--brand-soft);color:var(--brand);
+ display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:19px;font-weight:800}
+.lvlcard h3{font-size:20px;font-weight:750;letter-spacing:-.03em}
+.lvlcard .top small{display:block;font-size:12.5px;color:var(--ink-3);margin-top:2px}
+.bar{height:9px;border-radius:5px;background:var(--sunk);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:5px;background:var(--brand);
+ transition:width .6s cubic-bezier(.32,.72,0,1)}
+.lvlcard .nxt{font-size:12.5px;color:var(--ink-3);margin-top:9px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.mini{background:var(--surface);border-radius:var(--r-lg);padding:16px 10px;text-align:center;
+ box-shadow:var(--shadow)}
+.mini b{display:block;font-size:23px;font-weight:750;letter-spacing:-.04em}
+.mini small{display:block;font-size:11px;color:var(--ink-3);margin-top:2px}
+.panel{background:var(--surface);border-radius:var(--r-lg);padding:18px;box-shadow:var(--shadow);
+ margin-bottom:14px}
+.panel h4{font-size:14.5px;font-weight:720;margin-bottom:10px}
+.panel p{font-size:13px;color:var(--ink-2);line-height:1.55}
+.panel a{color:var(--brand);font-weight:650;text-decoration:none}
+.quest{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+.quest:last-child{border:0;padding-bottom:0}
+.quest .qi{width:34px;height:34px;border-radius:11px;background:var(--surface-2);color:var(--ink-3);
+ display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.quest.done .qi{background:var(--ok-soft);color:var(--ok)}
+.quest .qi svg{width:17px;height:17px;stroke-width:2.2}
+.quest .qt{flex:1;min-width:0}
+.quest b{display:block;font-size:13.5px;font-weight:680}
+.quest small{display:block;font-size:12px;color:var(--ink-3);margin-top:1px}
+.quest .qx{font-size:12px;font-weight:750;color:var(--brand);flex-shrink:0}
+.quest.done .qx{color:var(--ok)}
 
 /* ---- panneaux ---- */
 .sheet{position:fixed;inset:0;background:rgba(10,8,6,.5);-webkit-backdrop-filter:blur(3px);
@@ -301,8 +362,23 @@ nav button:active{transform:scale(.94)}
 .contact small{display:block;font-size:11.5px;font-weight:700;color:var(--danger);
  text-transform:uppercase;letter-spacing:.03em}
 .contact span{display:block;font-size:16px;font-weight:700;word-break:break-word;margin-top:1px}
+.zone{display:flex;gap:11px;align-items:center;background:var(--surface-2);border-radius:var(--r);
+ padding:13px;margin-bottom:14px}
+.zone .zi{width:36px;height:36px;border-radius:11px;background:var(--brand);color:var(--brand-ink);
+ display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.zone .zi svg{width:18px;height:18px;stroke-width:2}
+.zone b{display:block;font-size:13.5px;font-weight:700}
+.zone small{display:block;font-size:12px;color:var(--ink-2);margin-top:1px;line-height:1.4}
+.pick{display:grid;gap:10px}
+.pick button{display:flex;align-items:center;gap:13px;text-align:left;padding:16px;
+ border:1px solid var(--line);border-radius:var(--r);background:var(--surface);transition:transform .14s}
+.pick button:active{transform:scale(.98)}
+.pick .pi{width:42px;height:42px;border-radius:13px;display:flex;align-items:center;
+ justify-content:center;flex-shrink:0;color:#fff}
+.pick .pi svg{width:21px;height:21px}
+.pick b{display:block;font-size:15.5px;font-weight:690}
+.pick small{display:block;font-size:12.5px;color:var(--ink-3);margin-top:1px}
 
-/* ---- notifications ---- */
 .toast{position:fixed;left:20px;right:20px;bottom:calc(env(safe-area-inset-bottom) + 80px);
  background:var(--ink);color:var(--bg);padding:14px 17px;border-radius:var(--r);font-size:13.5px;
  font-weight:600;text-align:center;z-index:900;opacity:0;transform:translateY(10px);
@@ -312,30 +388,31 @@ nav button:active{transform:scale(.94)}
  backdrop-filter:blur(3px);z-index:1100;display:flex;align-items:center;justify-content:center;
  opacity:0;visibility:hidden;transition:opacity .25s}
 .ok-veil.on{opacity:1;visibility:visible}
-.ok-card{background:var(--surface);border-radius:var(--r-xl);padding:34px 32px;text-align:center;
+.ok-card{background:var(--surface);border-radius:var(--r-xl);padding:32px 30px;text-align:center;
  transform:scale(.82);transition:transform .42s cubic-bezier(.34,1.4,.5,1);box-shadow:var(--shadow-lg)}
 .ok-veil.on .ok-card{transform:scale(1)}
 .ok-card .ico{width:60px;height:60px;margin:0 auto 14px;border-radius:50%;background:var(--ok-soft);
  color:var(--ok);display:flex;align-items:center;justify-content:center}
 .ok-card .ico svg{width:30px;height:30px;stroke-width:2.4}
-.ok-card b{font-size:16.5px;font-weight:700}
+.ok-card b{font-size:16.5px;font-weight:700;display:block}
+.ok-card .xp{display:inline-block;margin-top:10px;font-size:13px;font-weight:800;color:var(--brand);
+ background:var(--brand-soft);padding:6px 13px;border-radius:100px}
 
-/* ---- écran d'accueil ---- */
 .intro{position:fixed;inset:0;z-index:1200;background:var(--bg);display:flex;flex-direction:column;
  justify-content:center;padding:36px 26px calc(env(safe-area-inset-bottom) + 26px);
- opacity:0;visibility:hidden;transition:opacity .3s}
+ opacity:0;visibility:hidden;transition:opacity .3s;overflow-y:auto}
 .intro.on{opacity:1;visibility:visible}
 .intro .mark{width:52px;height:52px;border-radius:17px;background:var(--brand);color:var(--brand-ink);
- display:flex;align-items:center;justify-content:center;margin-bottom:22px}
+ display:flex;align-items:center;justify-content:center;margin-bottom:20px;flex-shrink:0}
 .intro .mark svg{width:29px;height:29px}
-.intro h1{font-size:33px;font-weight:770;line-height:1.1;letter-spacing:-.04em;margin-bottom:10px}
-.intro .sub{font-size:15.5px;color:var(--ink-2);line-height:1.5;margin-bottom:34px}
-.intro ul{list-style:none;margin-bottom:32px}
-.intro li{display:flex;gap:14px;align-items:flex-start;margin-bottom:20px}
+.intro h1{font-size:31px;font-weight:770;line-height:1.12;letter-spacing:-.04em;margin-bottom:10px}
+.intro .sub{font-size:15px;color:var(--ink-2);line-height:1.5;margin-bottom:28px}
+.intro ul{list-style:none;margin-bottom:26px}
+.intro li{display:flex;gap:14px;align-items:flex-start;margin-bottom:18px}
 .intro li .li{width:38px;height:38px;border-radius:12px;background:var(--brand-soft);color:var(--brand);
  display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .intro li .li svg{width:19px;height:19px}
-.intro li b{display:block;font-size:15.5px;font-weight:680}
+.intro li b{display:block;font-size:15px;font-weight:680}
 .intro li span{display:block;font-size:13.5px;color:var(--ink-2);line-height:1.45;margin-top:2px}
 .intro .legal{text-align:center;font-size:11.5px;color:var(--ink-3);margin-top:14px;line-height:1.5}
 .intro .legal a{color:var(--ink-2);font-weight:650}
@@ -348,8 +425,7 @@ nav button:active{transform:scale(.94)}
 <symbol id="i-paw" viewBox="0 0 24 24" fill="currentColor">
  <ellipse cx="6.3" cy="10" rx="2.2" ry="2.8"/><ellipse cx="10.8" cy="7" rx="2.2" ry="3"/>
  <ellipse cx="15.6" cy="7.2" rx="2.2" ry="3"/><ellipse cx="19.3" cy="10.6" rx="2.1" ry="2.6"/>
- <path d="M12.7 12.6c2.5 0 4.6 1.7 5.3 3.6.8 2.2-.9 4.2-3.1 4.2-1 0-1.6-.3-2.2-.3s-1.2.3-2.2.3c-2.2 0-3.9-2-3.1-4.2.7-1.9 2.8-3.6 5.3-3.6z"/>
-</symbol>
+ <path d="M12.7 12.6c2.5 0 4.6 1.7 5.3 3.6.8 2.2-.9 4.2-3.1 4.2-1 0-1.6-.3-2.2-.3s-1.2.3-2.2.3c-2.2 0-3.9-2-3.1-4.2.7-1.9 2.8-3.6 5.3-3.6z"/></symbol>
 <symbol id="i-cam" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
  <path d="M3 9a2.5 2.5 0 0 1 2.5-2.5h1.1a1 1 0 0 0 .84-.46l.86-1.33a1 1 0 0 1 .84-.46h5.72a1 1 0 0 1 .84.46l.86 1.33a1 1 0 0 0 .84.46h1.1A2.5 2.5 0 0 1 21 9v8.5A2.5 2.5 0 0 1 18.5 20h-13A2.5 2.5 0 0 1 3 17.5z"/>
  <circle cx="12" cy="13" r="3.5"/></symbol>
@@ -372,22 +448,52 @@ nav button:active{transform:scale(.94)}
  <circle cx="12" cy="12" r="9.2"/><path d="M12 11v5.5M12 7.6h.01"/></symbol>
 <symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
  <path d="M21 16.9v2.6a1.8 1.8 0 0 1-2 1.8 17.6 17.6 0 0 1-7.7-2.7 17.3 17.3 0 0 1-5.3-5.3A17.6 17.6 0 0 1 3.3 5.6 1.8 1.8 0 0 1 5.1 3.6h2.6a1.8 1.8 0 0 1 1.8 1.5c.1.9.3 1.7.6 2.5a1.8 1.8 0 0 1-.4 1.9l-1.1 1.1a14 14 0 0 0 5.3 5.3l1.1-1.1a1.8 1.8 0 0 1 1.9-.4c.8.3 1.6.5 2.5.6a1.8 1.8 0 0 1 1.6 1.9z"/></symbol>
+<symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+ <path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+ <path d="M6 6l12 12M18 6 6 18"/></symbol>
+<symbol id="i-bowl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+ <path d="M3 11h18a9 9 0 0 1-9 9 9 9 0 0 1-9-9z"/><path d="M8.5 7.6c0-1.3 1.6-1.3 1.6-2.6M13.9 7.6c0-1.3 1.6-1.3 1.6-2.6"/></symbol>
+<symbol id="i-drop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+ <path d="M12 2.7s6.3 6.9 6.3 11.1A6.3 6.3 0 0 1 12 21a6.3 6.3 0 0 1-6.3-7.2C5.7 9.6 12 2.7 12 2.7z"/></symbol>
+<symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+ <path d="M3.5 10.4 12 3.6l8.5 6.8V20a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1z"/><path d="M9.5 21v-6.5h5V21"/></symbol>
+<symbol id="i-target" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+ <circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4"/></symbol>
+<symbol id="i-star" viewBox="0 0 24 24" fill="currentColor">
+ <path d="m12 2.9 2.9 5.9 6.5.9-4.7 4.6 1.1 6.5-5.8-3.1-5.8 3.1 1.1-6.5L2.6 9.7l6.5-.9z"/></symbol>
 </svg>
 
 <div class="app">
 <header>
   <span class="mark"><svg><use href="#i-paw"/></svg></span>
   <b>CatMap</b>
+  <span class="lvl" id="hdr-lvl"></span>
 </header>
 <main>
 
-<section id="v-add" class="view on"><div class="wiz">
-  <div class="wiz-bar" id="wiz-bar"></div>
+<section id="v-map" class="view on">
+  <div id="map"></div>
+  <div class="map-ui">
+    <button class="chip on" data-f="all">Tout</button>
+    <button class="chip" data-f="cats">Chats</button>
+    <button class="chip" data-f="lost">Perdus</button>
+    <button class="chip" data-f="places">Lieux</button>
+  </div>
+  <button class="locate" id="locate" aria-label="Me localiser"><svg><use href="#i-locate"/></svg></button>
+  <button class="fab" id="fab"><svg><use href="#i-plus"/></svg>Ajouter</button>
+</section>
+
+<section id="v-add" class="view"><div class="wiz">
+  <div class="wiz-top">
+    <button class="close" id="add-x"><svg><use href="#i-x"/></svg></button>
+    <div class="wiz-bar" id="wiz-bar"></div>
+  </div>
   <div class="wiz-track"><div class="wiz-steps" id="wiz-steps">
 
     <div class="wiz-step" data-step="1">
       <div class="wiz-head"><span class="wiz-n" data-n></span><h2>Une photo du chat</h2>
-        <p>C'est ce qui permet à tes voisins de le reconnaître.</p></div>
+        <p>C'est ce qui permet de le reconnaître d'une fois sur l'autre.</p></div>
       <label class="shot" id="shotbox">
         <span class="ico"><svg><use href="#i-cam"/></svg></span>
         <b>Prendre une photo</b><span>Ou en choisir une existante</span>
@@ -410,11 +516,11 @@ nav button:active{transform:scale(.94)}
         <p>Ce que tu observes en ce moment.</p></div>
       <div class="sts">
         <button class="st" data-s="Errant"><span class="si"><svg><use href="#i-paw"/></svg></span>
-          <span class="txt"><b>Errant</b><span>Il se promène seul dans le quartier</span></span></button>
+          <span class="txt"><b>Errant</b><span class="sd">Il vit ou se promène seul dans le quartier</span></span></button>
         <button class="st" data-s="Promenade"><span class="si"><svg><use href="#i-walk"/></svg></span>
-          <span class="txt"><b>En promenade</b><span>Il est accompagné de quelqu'un</span></span></button>
+          <span class="txt"><b>En promenade</b><span class="sd">Il est accompagné de quelqu'un</span></span></button>
         <button class="st lost" data-s="Perdu"><span class="si"><svg><use href="#i-alert"/></svg></span>
-          <span class="txt"><b>Perdu</b><span>Il a disparu, on le recherche</span></span></button>
+          <span class="txt"><b>Perdu</b><span class="sd">Il a disparu, on le recherche</span></span></button>
       </div>
       <div class="wiz-nav"><button class="back" id="b3">Retour</button>
         <button class="go" id="n3" disabled>Continuer</button></div>
@@ -428,7 +534,7 @@ nav button:active{transform:scale(.94)}
       <div class="fld"><label for="f-contact">Comment te joindre</label>
         <input type="text" id="f-contact" maxlength="100" placeholder="06 12 34 56 78" autocomplete="off"></div>
       <div class="note"><svg><use href="#i-info"/></svg>
-        <span>Ces informations seront visibles par tous les utilisateurs. N'indique que ce que tu acceptes de rendre public.</span></div>
+        <span>Ces informations seront visibles par tous. N'indique que ce que tu acceptes de rendre public.</span></div>
       <div class="wiz-nav"><button class="back" id="b4">Retour</button>
         <button class="go" id="n4">Continuer</button></div>
     </div>
@@ -440,42 +546,57 @@ nav button:active{transform:scale(.94)}
         <div class="recap-i"><b id="r-col"></b><span class="badge" id="r-st"></span></div></div>
       <div class="geo" id="geo"><svg><use href="#i-pin"/></svg><span id="geo-t">Localisation en cours…</span></div>
       <div class="wiz-nav"><button class="back" id="b5">Retour</button>
-        <button class="go" id="go">Signaler ce chat</button></div>
+        <button class="go" id="go">Ajouter à la carte</button></div>
     </div>
 
   </div></div>
 </div></section>
 
-<section id="v-map" class="view">
-  <div id="map"></div>
-  <div class="map-ui">
-    <button class="chip on" id="f-all">Tous</button>
-    <button class="chip" id="f-lost">Perdus</button>
+<section id="v-place" class="view">
+  <div class="wiz-top"><button class="close" id="place-x"><svg><use href="#i-x"/></svg></button></div>
+  <div class="pad">
+    <div class="wiz-head"><span class="wiz-n">Un lieu utile</span><h2>De quoi s'agit-il ?</h2>
+      <p>Ces repères aident tout le monde à prendre soin des chats du coin.</p></div>
+    <div class="sts" id="ptypes">
+      <button class="st p-Gamelle" data-p="Gamelle"><span class="si"><svg><use href="#i-bowl"/></svg></span>
+        <span class="txt"><b>Gamelle</b><span class="sd">Un endroit où on leur pose à manger</span></span></button>
+      <button class="st p-Eau" data-p="Eau"><span class="si"><svg><use href="#i-drop"/></svg></span>
+        <span class="txt"><b>Point d'eau</b><span class="sd">Vital en été, souvent le plus manquant</span></span></button>
+      <button class="st p-Abri" data-p="Abri"><span class="si"><svg><use href="#i-home"/></svg></span>
+        <span class="txt"><b>Abri</b><span class="sd">Un coin sec où ils se réfugient</span></span></button>
+      <button class="st p-Danger" data-p="Danger"><span class="si"><svg><use href="#i-alert"/></svg></span>
+        <span class="txt"><b>Zone dangereuse</b><span class="sd">Route passante, chantier, piège</span></span></button>
+    </div>
+    <div class="fld" style="margin-top:18px"><label for="p-note">Une précision (facultatif)</label>
+      <input type="text" id="p-note" maxlength="100" placeholder="Derrière le local à vélos" autocomplete="off"></div>
+    <div class="geo" id="pgeo"><svg><use href="#i-pin"/></svg><span id="pgeo-t">Localisation en cours…</span></div>
+    <button class="go" id="p-go" disabled>Ajouter ce lieu</button>
   </div>
-  <button class="locate" id="locate" aria-label="Me localiser"><svg><use href="#i-locate"/></svg></button>
 </section>
 
 <section id="v-list" class="view"><div class="pad" id="list-pad"></div></section>
 
+<section id="v-me" class="view"><div class="pad" id="me-pad"></div></section>
+
 </main>
 <nav>
-  <button class="on" data-v="add"><svg><use href="#i-cam"/></svg>Signaler</button>
-  <button data-v="map"><svg><use href="#i-map"/></svg>Carte</button>
-  <button data-v="list"><svg><use href="#i-paw"/></svg>Les chats</button>
+  <button class="on" data-v="map"><svg><use href="#i-map"/></svg>Carte</button>
+  <button data-v="list"><svg><use href="#i-paw"/></svg>Le quartier</button>
+  <button data-v="me"><svg><use href="#i-star"/></svg>Moi</button>
 </nav>
 </div>
 
 <div class="intro" id="intro">
   <span class="mark"><svg><use href="#i-paw"/></svg></span>
-  <h1>Les chats du quartier,<br>sur une seule carte.</h1>
-  <p class="sub">Chacun signale ce qu'il croise. Ensemble, on retrouve ceux qui se sont perdus.</p>
+  <h1>Recense les chats<br>de ton quartier.</h1>
+  <p class="sub">Chaque chat croisé, chaque gamelle, chaque coin dangereux. À plusieurs, on finit par tous les connaître.</p>
   <ul>
     <li><span class="li"><svg><use href="#i-cam"/></svg></span>
-      <div><b>Tu croises un chat</b><span>Une photo, sa couleur, et il apparaît sur la carte.</span></div></li>
-    <li><span class="li"><svg><use href="#i-alert"/></svg></span>
-      <div><b>Le tien a disparu</b><span>Signale-le perdu et laisse un contact : tes voisins sont prévenus.</span></div></li>
-    <li><span class="li"><svg><use href="#i-eye"/></svg></span>
-      <div><b>Tu l'aperçois</b><span>Un bouton, et son maître sait où il était.</span></div></li>
+      <div><b>Tu croises un chat</b><span>Une photo et sa couleur suffisent. Il rejoint la carte du quartier.</span></div></li>
+    <li><span class="li"><svg><use href="#i-target"/></svg></span>
+      <div><b>Sa zone se précise</b><span>Chaque nouvelle observation resserre le territoire où on peut le trouver.</span></div></li>
+    <li><span class="li"><svg><use href="#i-bowl"/></svg></span>
+      <div><b>Tu repères un lieu utile</b><span>Gamelle, point d'eau, abri, ou route dangereuse à éviter.</span></div></li>
   </ul>
   <button class="go" id="intro-go" style="margin-top:0">Commencer</button>
   <p class="legal">En continuant, tu acceptes que tes signalements soient visibles publiquement.
@@ -485,14 +606,27 @@ nav button:active{transform:scale(.94)}
 <div class="toast" id="toast"></div>
 
 <div class="ok-veil" id="okv"><div class="ok-card">
-  <span class="ico"><svg><use href="#i-check"/></svg></span><b id="ok-msg"></b></div></div>
+  <span class="ico"><svg><use href="#i-check"/></svg></span>
+  <b id="ok-msg"></b><span class="xp" id="ok-xp"></span></div></div>
+
+<div class="sheet" id="sh-pick"><div class="card">
+  <div class="grab"></div>
+  <h2>Qu'est-ce que tu ajoutes ?</h2>
+  <div class="pick">
+    <button id="pick-cat"><span class="pi" style="background:var(--brand)"><svg><use href="#i-paw"/></svg></span>
+      <span><b>Un chat</b><small>Photo, couleur, situation — 30 secondes</small></span></button>
+    <button id="pick-place"><span class="pi" style="background:var(--gold)"><svg><use href="#i-bowl"/></svg></span>
+      <span><b>Un lieu utile</b><small>Gamelle, eau, abri, ou zone dangereuse</small></span></button>
+  </div>
+</div></div>
 
 <div class="sheet" id="sh-legal"><div class="card">
   <div class="grab"></div>
   <h2>Vie privée et données</h2>
-  <p class="t"><b>Ce qui est public.</b> Tout signalement — la photo, la position approximative, la couleur, la situation, et le nom et contact que tu saisis pour un chat perdu — est visible par tous les utilisateurs. N'indique jamais une information que tu ne veux pas rendre publique.</p>
-  <p class="t"><b>Ta position.</b> Elle sert uniquement à placer le chat sur la carte et à calculer les distances. Elle n'est ni enregistrée en continu, ni associée à ton identité.</p>
-  <p class="t"><b>Aucun compte.</b> L'app ne demande ni e-mail, ni mot de passe, et ne conserve aucun identifiant personnel. Les données sont hébergées par Google Firebase (Firestore, région Europe).</p>
+  <p class="t"><b>Ce qui est public.</b> Tout signalement — la photo, la position approximative, la couleur, la situation, les lieux, et le nom et contact saisis pour un chat perdu — est visible par tous les utilisateurs. N'indique jamais une information que tu ne veux pas rendre publique.</p>
+  <p class="t"><b>Ta position.</b> Elle sert uniquement à placer les signalements sur la carte et à calculer les distances. Elle n'est ni enregistrée en continu, ni associée à ton identité.</p>
+  <p class="t"><b>Aucun compte.</b> L'app ne demande ni e-mail, ni mot de passe. Ta progression et tes points sont gardés sur ce téléphone uniquement : ils ne sont ni envoyés, ni comparés à ceux des autres.</p>
+  <p class="t"><b>Hébergement.</b> Les données sont stockées chez Google Firebase (Firestore, région Europe).</p>
   <p class="t"><b>Effacer un signalement.</b> L'app ne permet pas encore de supprimer une fiche soi-même. Écris-nous et nous la retirerons.</p>
   <p class="t"><b>Chats perdus.</b> CatMap est un outil d'entraide entre voisins. Elle ne remplace ni la mairie, ni un vétérinaire, ni le fichier national I-CAD.</p>
   <button class="go" id="legal-close">Fermer</button>
@@ -510,12 +644,23 @@ nav button:active{transform:scale(.94)}
   <div class="grab"></div>
   <h2 id="d-title"></h2>
   <img class="hero" id="d-img" alt="">
+  <div class="zone" id="d-zone"><span class="zi"><svg><use href="#i-target"/></svg></span>
+    <div><b id="d-zone-t"></b><small id="d-zone-s"></small></div></div>
   <div class="contact" id="d-contact" style="display:none">
     <span class="ci"><svg><use href="#i-phone"/></svg></span>
     <div><small id="d-contact-lbl"></small><span id="d-contact-val"></span></div></div>
   <div id="d-rows"></div>
   <div class="act" id="d-act"></div>
   <button class="ghost" id="d-close" style="margin-top:10px">Fermer</button>
+</div></div>
+
+<div class="sheet" id="sh-place"><div class="card">
+  <div class="grab"></div>
+  <h2 id="q-title"></h2>
+  <p id="q-note"></p>
+  <div id="q-rows"></div>
+  <div class="act" id="q-act"></div>
+  <button class="ghost" id="q-close" style="margin-top:10px">Fermer</button>
 </div></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -536,20 +681,48 @@ const firebaseConfig={
 };
 const app=initializeApp(firebaseConfig);
 const db=initializeFirestore(app,{localCache:persistentLocalCache({tabManager:persistentSingleTabManager()})});
-const catsCol=collection(db,'cats');
+const catsCol=collection(db,'cats'),placesCol=collection(db,'places');
 
 const COLORS={Gris:'#9b9b9b',Roux:'#d2691e',Noir:'#2c2c2c',Blanc:'#e8e6e1',Tigré:'#8b6f47',Bicolore:'#6b6b6b'};
 const LIGHT=['Blanc'];
-let photo=null,thumb=null,color=null,status=null,pos=null,map=null,layer=null,pending=null,
-    view='add',step=1,onlyLost=false;
-let cats=[];
+const PICO={Gamelle:'i-bowl',Eau:'i-drop',Abri:'i-home',Danger:'i-alert'};
+const PCOL={Gamelle:'#b7791f',Eau:'#0a6fb5',Abri:'#15803d',Danger:'#d92d20'};
+const PLBL={Gamelle:'Gamelle',Eau:"Point d'eau",Abri:'Abri',Danger:'Zone dangereuse'};
+
+let photo=null,thumb=null,color=null,status=null,ptype=null,pos=null,
+    map=null,layer=null,pending=null,view='map',step=1,filter='all',tab='cats';
+let cats=[],places=[];
 const photoCache=new Map();
 
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-/* La photo pleine taille vit dans une collection à part : la carte et la liste
-   ne chargent que des fiches légères, la photo n'arrive qu'à l'ouverture. */
+/* ---------- progression, gardée sur cet appareil uniquement ---------- */
+const XP_KEY='catmap.me.v1';
+const LEVELS=[
+ {min:0,n:'Curieux'},{min:120,n:'Observateur'},{min:350,n:'Éclaireur'},
+ {min:800,n:'Pisteur'},{min:1600,n:'Gardien du quartier'},{min:3200,n:'Légende féline'}];
+const GAIN={cat:25,obs:10,place:15,confirm:5,found:50};
+let me={xp:0,cats:0,obs:0,places:0};
+try{me=Object.assign(me,JSON.parse(localStorage.getItem(XP_KEY)||'{}'))}catch{}
+const saveMe=()=>{try{localStorage.setItem(XP_KEY,JSON.stringify(me))}catch{}};
+const levelOf=xp=>LEVELS.reduce((a,l)=>xp>=l.min?l:a,LEVELS[0]);
+const nextOf=xp=>LEVELS.find(l=>l.min>xp)||null;
+
+function award(kind){
+ const before=levelOf(me.xp).n;
+ me.xp+=GAIN[kind]||0;
+ if(kind==='cat')me.cats++;
+ if(kind==='obs'||kind==='found')me.obs++;
+ if(kind==='place')me.places++;
+ saveMe();paintLevel();
+ if(view==='me')drawMe();
+ const after=levelOf(me.xp).n;
+ return {gain:GAIN[kind]||0,levelUp:after!==before?after:null};
+}
+function paintLevel(){$('#hdr-lvl').textContent=levelOf(me.xp).n}
+
+/* ---------- photos ---------- */
 async function loadPhoto(id){
  if(photoCache.has(id))return photoCache.get(id);
  /* fiches d'avant la séparation : la photo est encore dans la fiche elle-même */
@@ -564,18 +737,38 @@ async function loadPhoto(id){
 
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');
  setTimeout(()=>t.classList.remove('on'),2600)}
-function celebrate(m){$('#ok-msg').textContent=m;$('#okv').classList.add('on');
- setTimeout(()=>$('#okv').classList.remove('on'),1400)}
+function celebrate(m,res){
+ $('#ok-msg').textContent=res&&res.levelUp?`Niveau atteint : ${res.levelUp}`:m;
+ $('#ok-xp').textContent=res&&res.gain?`+${res.gain} XP`:'';
+ $('#ok-xp').style.display=res&&res.gain?'inline-block':'none';
+ $('#okv').classList.add('on');setTimeout(()=>$('#okv').classList.remove('on'),1600)}
 
 function dist(a,b,c,d){const R=6371e3,p=Math.PI/180,x=(c-a)*p,y=(d-b)*p;
  const h=Math.sin(x/2)**2+Math.cos(a*p)*Math.cos(c*p)*Math.sin(y/2)**2;
  return Math.round(2*R*Math.atan2(Math.sqrt(h),Math.sqrt(1-h)))}
 const fmt=m=>m<1000?m+' m':(m/1000).toFixed(1)+' km';
 
-/* Le parcours gagne une étape quand le chat est perdu : on demande alors
-   son nom et un moyen de joindre son maître. Sinon on saute directement au récap. */
-const seq=()=>status==='Perdu'?[1,2,3,4,5]:[1,2,3,5];
+/* ---------- territoire ----------
+   Un chat n'est pas un point mais une zone de vie. On la déduit de toutes
+   les observations : leur centre donne le cœur du territoire, leur dispersion
+   sa taille. Le terme 220/√n est l'incertitude restante — large sur une seule
+   observation, il se resserre à mesure que le quartier confirme. */
+function territory(k){
+ const pts=(k.spots&&k.spots.length?k.spots.map(s=>({lat:s.a,lng:s.o}))
+            :[{lat:k.lat,lng:k.lng}]);
+ const lat=pts.reduce((s,p)=>s+p.lat,0)/pts.length;
+ const lng=pts.reduce((s,p)=>s+p.lng,0)/pts.length;
+ const spread=pts.reduce((m,p)=>Math.max(m,dist(lat,lng,p.lat,p.lng)),0);
+ const n=Math.max(1,k.seen||pts.length);
+ return {lat,lng,n,radius:Math.round(spread+220/Math.sqrt(n))};
+}
+const zoneLabel=n=>n>=6?'Zone bien connue':n>=3?'Zone probable':'Zone approximative';
+const zoneHint=n=>n>=6?"Le quartier l'a vu assez souvent pour cerner son territoire."
+ :n>=3?"Quelques observations : la zone se précise déjà."
+ :`${n===1?'Une seule observation':'Deux observations'} — signale-le si tu le croises, la zone se resserrera.`;
 
+/* ---------- parcours chat ---------- */
+const seq=()=>status==='Perdu'?[1,2,3,4,5]:[1,2,3,5];
 function showStep(n){
  step=n;
  const s=seq(),i=s.indexOf(n);
@@ -598,13 +791,11 @@ const back=()=>{const s=seq();showStep(s[Math.max(s.indexOf(step)-1,0)])};
 $('#cols').innerHTML=Object.entries(COLORS).map(([n,c])=>
  `<button class="col${LIGHT.includes(n)?' light':''}" data-c="${n}" style="background:${c}">
    <span class="tick"><svg><use href="#i-check"/></svg></span><em>${n}</em></button>`).join('');
-
 document.querySelectorAll('.col').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('.col').forEach(x=>x.classList.remove('on'));
  b.classList.add('on');color=b.dataset.c;$('#n2').disabled=false});
-
-document.querySelectorAll('.st').forEach(b=>b.onclick=()=>{
- document.querySelectorAll('.st').forEach(x=>x.classList.remove('on'));
+document.querySelectorAll('#v-add .st').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('#v-add .st').forEach(x=>x.classList.remove('on'));
  b.classList.add('on');status=b.dataset.s;$('#n3').disabled=false;
  /* « Perdu » ajoute une étape : l'indicateur doit le refléter tout de suite */
  showStep(step)});
@@ -616,17 +807,14 @@ function resize(img,max,quality){
  cv.width=w;cv.height=h;cv.getContext('2d').drawImage(img,0,0,w,h);
  return cv.toDataURL('image/jpeg',quality);
 }
-
 $('#file').onchange=e=>{const f=e.target.files[0];if(!f)return;
  const img=new Image(),r=new FileReader();
  r.onload=()=>{img.onload=()=>{
-  photo=resize(img,900,.75);
-  thumb=resize(img,120,.5);
+  photo=resize(img,900,.75);thumb=resize(img,120,.5);
   $('#prev').src=photo;$('#shotbox').style.display='none';$('#prevbox').style.display='block';
   $('#n1').disabled=false};
   img.src=r.result};
  r.readAsDataURL(f)};
-
 $('#retake').onclick=()=>{photo=thumb=null;$('#file').value='';
  $('#shotbox').style.display='block';$('#prevbox').style.display='none';$('#n1').disabled=true};
 
@@ -634,13 +822,17 @@ function geo(){
  if(!navigator.geolocation){$('#geo-t').textContent='GPS indisponible';return}
  navigator.geolocation.getCurrentPosition(p=>{
   pos={lat:p.coords.latitude,lng:p.coords.longitude};
-  $('#geo-t').textContent='Position trouvée (±'+Math.round(p.coords.accuracy)+' m)';
-  $('#geo').classList.add('ok');updateBadge();
-  if(view==='map'&&map)drawMap()},
- ()=>{$('#geo-t').textContent='Position refusée — autorise la localisation'},
+  const t='Position trouvée (±'+Math.round(p.coords.accuracy)+' m)';
+  $('#geo-t').textContent=t;$('#geo').classList.add('ok');
+  $('#pgeo-t').textContent=t;$('#pgeo').classList.add('ok');
+  updateBadge();if(view==='map')drawMap()},
+ ()=>{const t='Position refusée — autorise la localisation';
+  $('#geo-t').textContent=t;$('#pgeo-t').textContent=t},
  {enableHighAccuracy:true,timeout:10000});
 }
 geo();
+
+const here=()=>({a:+pos.lat.toFixed(5),o:+pos.lng.toFixed(5)});
 
 $('#go').onclick=()=>{
  if(!pos){toast('Position requise — autorise le GPS');geo();return}
@@ -652,11 +844,11 @@ $('#go').onclick=()=>{
   $('#m-img').src=pending.thumb||pending.photo||'';
   loadPhoto(pending.id).then(p=>{if(p&&pending)$('#m-img').src=p});
   $('#sh-match').classList.add('on')}
- else add()};
+ else addCat()};
 
-async function add(){
+async function addCat(){
  const ref=doc(catsCol),now=new Date().toISOString();
- const data={color,status,thumb,lat:pos.lat,lng:pos.lng,first:now,last:now,seen:1};
+ const data={color,status,thumb,lat:pos.lat,lng:pos.lng,first:now,last:now,seen:1,spots:[here()]};
  if(status==='Perdu'){
   const n=$('#f-name').value.trim(),c=$('#f-contact').value.trim();
   if(n)data.name=n;
@@ -668,41 +860,74 @@ async function add(){
   /* la photo d'abord : quand la fiche apparaît, son image est déjà en place */
   await setDoc(doc(db,'photos',ref.id),{data:photo});
   await setDoc(ref,data);
-  reset();celebrate(msg);
+  resetCat();go('map');celebrate(msg,award('cat'));
  }catch{toast("Envoi impossible — vérifie ta connexion")}
 }
 
 $('#m-yes').onclick=async()=>{
- const upd={seen:increment(1),last:new Date().toISOString(),lat:pos.lat,lng:pos.lng};
+ const k=pending,spots=[...(k.spots||[]),here()].slice(-12);
+ const upd={seen:increment(1),last:new Date().toISOString(),lat:pos.lat,lng:pos.lng,spots};
  if(status==='Perdu')upd.status='Perdu';
- try{await updateDoc(doc(db,'cats',pending.id),upd);
-  $('#sh-match').classList.remove('on');reset();celebrate('Observation ajoutée');
+ try{await updateDoc(doc(db,'cats',k.id),upd);
+  $('#sh-match').classList.remove('on');resetCat();go('map');
+  celebrate('Observation ajoutée',award('obs'));
  }catch{toast('Impossible pour le moment')}};
-$('#m-no').onclick=()=>{$('#sh-match').classList.remove('on');add()};
+$('#m-no').onclick=()=>{$('#sh-match').classList.remove('on');addCat()};
 
-function reset(){photo=thumb=color=status=null;pending=null;
+function resetCat(){photo=thumb=color=status=null;pending=null;
  $('#shotbox').style.display='block';$('#prevbox').style.display='none';$('#file').value='';
  $('#f-name').value='';$('#f-contact').value='';
- document.querySelectorAll('.col,.st').forEach(b=>b.classList.remove('on'));
+ document.querySelectorAll('.col,#v-add .st').forEach(b=>b.classList.remove('on'));
  $('#n1').disabled=true;$('#n2').disabled=true;$('#n3').disabled=true;
  showStep(1)}
 showStep(1);
 
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
- document.querySelectorAll('nav button').forEach(x=>x.classList.remove('on'));
- document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));
- b.classList.add('on');view=b.dataset.v;$('#v-'+view).classList.add('on');
- if(view==='map')drawMap();if(view==='list')drawList()});
+/* ---------- lieux ---------- */
+document.querySelectorAll('#ptypes .st').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('#ptypes .st').forEach(x=>x.classList.remove('on'));
+ b.classList.add('on');ptype=b.dataset.p;$('#p-go').disabled=false});
 
-/* ---- carte ---- */
+$('#p-go').onclick=async()=>{
+ if(!pos){toast('Position requise — autorise le GPS');geo();return}
+ const now=new Date().toISOString();
+ const data={type:ptype,lat:pos.lat,lng:pos.lng,first:now,last:now,ok:1};
+ const note=$('#p-note').value.trim();
+ if(note)data.note=note;
+ try{
+  await setDoc(doc(placesCol),data);
+  ptype=null;$('#p-note').value='';
+  document.querySelectorAll('#ptypes .st').forEach(x=>x.classList.remove('on'));
+  $('#p-go').disabled=true;
+  go('map');celebrate('Lieu ajouté à la carte',award('place'));
+ }catch{toast("Envoi impossible — vérifie ta connexion")}};
+
+/* ---------- navigation ---------- */
+function go(v){
+ view=v;
+ document.querySelectorAll('.view').forEach(x=>x.classList.toggle('on',x.id==='v-'+v));
+ document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
+ if(v==='map')drawMap();
+ if(v==='list')drawList();
+ if(v==='me')drawMe();
+}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>go(b.dataset.v));
+$('#fab').onclick=()=>$('#sh-pick').classList.add('on');
+$('#pick-cat').onclick=()=>{$('#sh-pick').classList.remove('on');go('add')};
+$('#pick-place').onclick=()=>{$('#sh-pick').classList.remove('on');go('place')};
+$('#add-x').onclick=()=>go('map');
+$('#place-x').onclick=()=>go('map');
+
+/* ---------- carte ---------- */
 const pinIcon=(k,size)=>L.divIcon({className:'pin',iconSize:[size,size],iconAnchor:[size/2,size/2],
  html:`<i class="${k.status==='Perdu'?'lost':k.status==='Retrouvé'?'found':''}"
    style="background-image:url('${k.thumb||k.photo||''}')"></i>`});
+const placeIcon=p=>L.divIcon({className:'plc',iconSize:[32,32],iconAnchor:[16,16],
+ html:`<i class="${p.type}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+   stroke-linecap="round" stroke-linejoin="round"><use href="#${PICO[p.type]}"/></svg></i>`});
 
 function drawMap(){
  if(!map){
-  map=L.map('map',{zoomControl:false,attributionControl:true})
-    .setView(pos?[pos.lat,pos.lng]:[49.4,2.3],15);
+  map=L.map('map',{zoomControl:false}).setView(pos?[pos.lat,pos.lng]:[49.4,2.3],15);
   /* OpenStreetMap : libre et sans clé d'API. Le rendu neutre vient du
      filtre CSS sur .leaflet-tile-pane, pas d'un fournisseur payant. */
   L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
@@ -713,24 +938,37 @@ function drawMap(){
  layer=L.layerGroup().addTo(map);
  if(pos)L.marker([pos.lat,pos.lng],{icon:L.divIcon({className:'me',iconSize:[18,18],
   iconAnchor:[9,9],html:'<i></i>'}),interactive:false}).addTo(layer);
- const shown=cats.filter(k=>!onlyLost||k.status==='Perdu');
- shown.forEach(k=>{
-  const size=k.status==='Retrouvé'?32:44;
-  L.marker([k.lat,k.lng],{icon:pinIcon(k,size)}).addTo(layer).on('click',()=>detail(k.id))});
- if(shown.length)map.fitBounds(L.latLngBounds(shown.map(k=>[k.lat,k.lng])).pad(.35),{maxZoom:16});
+
+ const showCats=filter==='all'||filter==='cats'||filter==='lost';
+ const showPlaces=filter==='all'||filter==='places';
+ const kk=showCats?cats.filter(k=>filter!=='lost'||k.status==='Perdu'):[];
+ const pp=showPlaces?places:[];
+
+ kk.forEach(k=>{
+  const t=territory(k),lost=k.status==='Perdu',found=k.status==='Retrouvé';
+  /* la zone de vie : d'autant plus large qu'on a peu d'observations */
+  L.circle([t.lat,t.lng],{radius:t.radius,
+   color:lost?'#d92d20':COLORS[k.color]||'#999',weight:1.5,opacity:found?.25:.7,
+   fillColor:lost?'#d92d20':COLORS[k.color]||'#999',fillOpacity:found?.04:.12,
+   dashArray:t.n>=3?null:'5 5',interactive:false}).addTo(layer);
+  L.marker([t.lat,t.lng],{icon:pinIcon(k,found?32:44)}).addTo(layer).on('click',()=>detail(k.id))});
+
+ pp.forEach(p=>L.marker([p.lat,p.lng],{icon:placeIcon(p)}).addTo(layer)
+   .on('click',()=>placeDetail(p.id)));
+
+ const all=[...kk.map(k=>{const t=territory(k);return[t.lat,t.lng]}),...pp.map(p=>[p.lat,p.lng])];
+ if(all.length)map.fitBounds(L.latLngBounds(all).pad(.35),{maxZoom:16});
 }
 
-$('#f-all').onclick=()=>{onlyLost=false;$('#f-all').classList.add('on');
- $('#f-lost').classList.remove('on');drawMap()};
-$('#f-lost').onclick=()=>{onlyLost=true;$('#f-lost').classList.add('on');
- $('#f-all').classList.remove('on');drawMap()};
+document.querySelectorAll('.map-ui .chip').forEach(c=>c.onclick=()=>{
+ document.querySelectorAll('.map-ui .chip').forEach(x=>x.classList.remove('on'));
+ c.classList.add('on');filter=c.dataset.f;drawMap()});
 $('#locate').onclick=()=>{
  if(!pos){toast('Position requise — autorise le GPS');geo();return}
  map&&map.flyTo([pos.lat,pos.lng],16,{duration:.6})};
 
-/* ---- liste ---- */
+/* ---------- le quartier ---------- */
 const nearLost=()=>pos?cats.filter(k=>k.status==='Perdu'&&dist(pos.lat,pos.lng,k.lat,k.lng)<2000):[];
-
 function updateBadge(){
  const btn=document.querySelector('nav button[data-v="list"]');
  const old=btn.querySelector('.nbadge');if(old)old.remove();
@@ -739,40 +977,92 @@ function updateBadge(){
 }
 
 function drawList(){
- /* les chats perdus passent devant : c'est eux qui ont besoin d'aide */
- const rank=k=>k.status==='Perdu'?0:k.status==='Retrouvé'?2:1;
- const c=[...cats].sort((a,b)=>rank(a)-rank(b)||new Date(b.last)-new Date(a.last));
- const about=`<div class="about"><p>Une carte des chats du quartier, tenue par ses habitants.
-   Tout ce qui est signalé est public. <a href="#" id="about-legal">Vie privée et données →</a></p></div>`;
- if(!c.length){
-  $('#list-pad').innerHTML=`<div class="empty"><span class="ico"><svg><use href="#i-paw"/></svg></span>
-   <b>Aucun chat pour l'instant</b><span>Commence par en photographier un près de chez toi.</span></div>`+about;
-  $('#about-legal').onclick=e=>{e.preventDefault();$('#sh-legal').classList.add('on')};
-  return}
- const lost=c.filter(k=>k.status==='Perdu').length,al=nearLost().length;
- $('#list-pad').innerHTML=
- `<div class="alert${al?' on':''}"><svg><use href="#i-alert"/></svg>
+ const al=nearLost().length;
+ const head=`<div class="alert${al?' on':''}"><svg><use href="#i-alert"/></svg>
    <div><b>${al} chat${al>1?'s':''} perdu${al>1?'s':''} près de toi</b>
    <span>Ouvre sa fiche si tu l'aperçois — ça aide vraiment son maître.</span></div></div>
-  <div class="stat"><div><b>${c.length}</b><small>chats</small></div>
-   <div><b>${c.reduce((s,k)=>s+(k.seen||0),0)}</b><small>observations</small></div>
-   <div><b>${lost}</b><small>perdus</small></div></div>
-  <div class="list">${c.map(k=>`<div class="item${k.status==='Retrouvé'?' found':''}" data-id="${k.id}">
-   <div class="dot" style="background:${COLORS[k.color]||'#999'}${(k.thumb||k.photo)?`;background-image:url(${k.thumb||k.photo})`:''}"></div>
-   <div class="txt"><b>${esc(k.name||k.color)}</b>
-    <small>${k.seen} obs.${pos?' · '+fmt(dist(pos.lat,pos.lng,k.lat,k.lng)):''}</small></div>
-   <span class="badge ${k.status==='Perdu'?'lost':k.status==='Retrouvé'?'ok':''}">${esc(k.status)}</span>
-   </div>`).join('')}</div>`+about;
- document.querySelectorAll('.item').forEach(i=>i.onclick=()=>detail(i.dataset.id));
- $('#about-legal').onclick=e=>{e.preventDefault();$('#sh-legal').classList.add('on')};
+  <div class="seg"><button data-t="cats" class="${tab==='cats'?'on':''}">Chats · ${cats.length}</button>
+   <button data-t="places" class="${tab==='places'?'on':''}">Lieux · ${places.length}</button></div>`;
+ let body;
+ if(tab==='cats'){
+  /* les chats perdus passent devant : c'est eux qui ont besoin d'aide */
+  const rank=k=>k.status==='Perdu'?0:k.status==='Retrouvé'?2:1;
+  const c=[...cats].sort((a,b)=>rank(a)-rank(b)||new Date(b.last)-new Date(a.last));
+  body=c.length?`<div class="list">${c.map(k=>{const t=territory(k);return`
+   <div class="item${k.status==='Retrouvé'?' found':''}" data-id="${k.id}">
+    <div class="dot" style="background:${COLORS[k.color]||'#999'}${(k.thumb||k.photo)?`;background-image:url(${k.thumb||k.photo})`:''}"></div>
+    <div class="txt"><b>${esc(k.name||k.color)}</b>
+     <small>${zoneLabel(t.n)} · ${fmt(t.radius)}${pos?' · à '+fmt(dist(pos.lat,pos.lng,t.lat,t.lng)):''}</small></div>
+    <span class="badge ${k.status==='Perdu'?'lost':k.status==='Retrouvé'?'ok':''}">${esc(k.status)}</span>
+   </div>`}).join('')}</div>`
+  :`<div class="empty"><span class="ico"><svg><use href="#i-paw"/></svg></span>
+    <b>Aucun chat pour l'instant</b><span>Sois le premier à en recenser un près de chez toi.</span></div>`;
+ }else{
+  const p=[...places].sort((a,b)=>pos?dist(pos.lat,pos.lng,a.lat,a.lng)-dist(pos.lat,pos.lng,b.lat,b.lng):0);
+  body=p.length?`<div class="list">${p.map(q=>`
+   <div class="item" data-pid="${q.id}">
+    <div class="dot" style="background:${PCOL[q.type]}"><svg viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><use href="#${PICO[q.type]}"/></svg></div>
+    <div class="txt"><b>${esc(PLBL[q.type]||q.type)}</b>
+     <small>${q.note?esc(q.note)+' · ':''}${q.ok} confirmation${q.ok>1?'s':''}${pos?' · à '+fmt(dist(pos.lat,pos.lng,q.lat,q.lng)):''}</small></div>
+   </div>`).join('')}</div>`
+  :`<div class="empty"><span class="ico"><svg><use href="#i-bowl"/></svg></span>
+    <b>Aucun lieu répertorié</b><span>Une gamelle, un point d'eau, un abri, une route dangereuse.</span></div>`;
+ }
+ $('#list-pad').innerHTML=head+body;
+ document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;drawList()});
+ document.querySelectorAll('[data-id]').forEach(i=>i.onclick=()=>detail(i.dataset.id));
+ document.querySelectorAll('[data-pid]').forEach(i=>i.onclick=()=>placeDetail(i.dataset.pid));
 }
 
+/* ---------- moi ---------- */
+function drawMe(){
+ const lv=levelOf(me.xp),nx=nextOf(me.xp);
+ const span=nx?nx.min-lv.min:1,into=me.xp-lv.min;
+ const pct=nx?Math.min(100,Math.round(into/span*100)):100;
+ const quests=[
+  {b:'Recenser un premier chat',s:'Le point de départ',x:GAIN.cat,done:me.cats>=1},
+  {b:'Confirmer une observation',s:"Resserre la zone d'un chat déjà connu",x:GAIN.obs,done:me.obs>=1},
+  {b:'Ajouter un lieu utile',s:'Gamelle, eau, abri ou danger',x:GAIN.place,done:me.places>=1},
+  {b:'Recenser 5 chats',s:'Ton quartier commence à être couvert',x:GAIN.cat,done:me.cats>=5},
+  {b:'Recenser 20 chats',s:'Tu connais le quartier mieux que personne',x:GAIN.cat,done:me.cats>=20}];
+ $('#me-pad').innerHTML=`
+  <div class="lvlcard">
+   <div class="top"><span class="ring">${me.xp}</span>
+    <div><h3>${lv.n}</h3><small>${me.xp} XP au total</small></div></div>
+   <div class="bar"><i style="width:${pct}%"></i></div>
+   <p class="nxt">${nx?`Encore ${nx.min-me.xp} XP pour devenir ${nx.n}`:'Niveau maximum atteint. Chapeau.'}</p></div>
+  <div class="grid3">
+   <div class="mini"><b>${me.cats}</b><small>chats recensés</small></div>
+   <div class="mini"><b>${me.obs}</b><small>observations</small></div>
+   <div class="mini"><b>${me.places}</b><small>lieux ajoutés</small></div></div>
+  <div class="panel"><h4>Objectifs</h4>
+   ${quests.map(q=>`<div class="quest${q.done?' done':''}">
+     <span class="qi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
+       stroke-linejoin="round"><use href="#${q.done?'i-check':'i-target'}"/></svg></span>
+     <span class="qt"><b>${q.b}</b><small>${q.s}</small></span>
+     <span class="qx">+${q.x}</span></div>`).join('')}</div>
+  <div class="panel"><h4>Le quartier</h4>
+   <p>Ensemble, vous avez recensé <b>${cats.length} chat${cats.length>1?'s':''}</b>
+    et <b>${places.length} lieu${places.length>1?'x':''}</b>.
+    Chaque observation resserre les zones et rend la carte plus utile à tout le monde.</p></div>
+  <div class="panel"><h4>Tes points</h4>
+   <p>L'app ne demande aucun compte : ta progression est gardée sur ce téléphone et n'est
+    comparée à personne. Elle est là pour suivre ta contribution, pas pour te classer.
+    <a href="#" id="me-legal">Vie privée et données →</a></p></div>`;
+ $('#me-legal').onclick=e=>{e.preventDefault();$('#sh-legal').classList.add('on')};
+}
+
+/* ---------- fiches ---------- */
 function detail(id){
  const k=cats.find(x=>x.id===id);if(!k)return;
+ const t=territory(k);
  $('#d-title').textContent=(k.name?k.name+' · ':'')+k.color+' · '+k.status;
  /* la miniature s'affiche tout de suite, la vraie photo la remplace dès son arrivée */
  $('#d-img').src=k.thumb||k.photo||'';
  loadPhoto(id).then(p=>{if(p)$('#d-img').src=p});
+ $('#d-zone-t').textContent=`${zoneLabel(t.n)} · rayon ${fmt(t.radius)}`;
+ $('#d-zone-s').textContent=zoneHint(t.n);
 
  /* contact saisi par un autre utilisateur : jamais injecté en HTML */
  const showContact=k.contact&&k.status==='Perdu';
@@ -785,7 +1075,7 @@ function detail(id){
  `<div class="row"><span>Observations</span><span>${k.seen}</span></div>
   <div class="row"><span>Première fois</span><span>${new Date(k.first).toLocaleDateString('fr-FR')}</span></div>
   <div class="row"><span>Dernière fois</span><span>${new Date(k.last).toLocaleDateString('fr-FR')}</span></div>
-  ${pos?`<div class="row"><span>Distance</span><span>${fmt(dist(pos.lat,pos.lng,k.lat,k.lng))}</span></div>`:''}`;
+  ${pos?`<div class="row"><span>Distance</span><span>${fmt(dist(pos.lat,pos.lng,t.lat,t.lng))}</span></div>`:''}`;
 
  const act=$('#d-act');act.innerHTML='';
  if(k.status!=='Retrouvé'){
@@ -798,38 +1088,69 @@ function detail(id){
 
 async function markSeen(id){
  if(!pos){toast('Position requise — autorise le GPS');geo();return}
+ const k=cats.find(x=>x.id===id);
+ const spots=[...(k.spots||[]),here()].slice(-12);
  try{
   await updateDoc(doc(db,'cats',id),
-   {seen:increment(1),last:new Date().toISOString(),lat:pos.lat,lng:pos.lng});
-  $('#sh-det').classList.remove('on');celebrate('Merci — observation ajoutée');
+   {seen:increment(1),last:new Date().toISOString(),lat:pos.lat,lng:pos.lng,spots});
+  $('#sh-det').classList.remove('on');celebrate('Zone précisée, merci',award('obs'));
  }catch{toast('Impossible pour le moment')}
 }
-
 async function markFound(id){
  try{
   await updateDoc(doc(db,'cats',id),{status:'Retrouvé',last:new Date().toISOString()});
-  $('#sh-det').classList.remove('on');celebrate('Génial — chat retrouvé !');
+  $('#sh-det').classList.remove('on');celebrate('Génial — chat retrouvé !',award('found'));
  }catch{toast('Impossible pour le moment')}
 }
 
+function placeDetail(id){
+ const q=places.find(x=>x.id===id);if(!q)return;
+ $('#q-title').textContent=PLBL[q.type]||q.type;
+ $('#q-note').textContent=q.note||(q.type==='Danger'
+  ?'Un endroit où les chats risquent de se blesser.'
+  :'Un repère utile pour prendre soin des chats du coin.');
+ $('#q-rows').innerHTML=
+ `<div class="row"><span>Confirmations</span><span>${q.ok}</span></div>
+  <div class="row"><span>Ajouté le</span><span>${new Date(q.first).toLocaleDateString('fr-FR')}</span></div>
+  ${pos?`<div class="row"><span>Distance</span><span>${fmt(dist(pos.lat,pos.lng,q.lat,q.lng))}</span></div>`:''}`;
+ const act=$('#q-act');
+ act.innerHTML=`<button class="seen"><svg><use href="#i-check"/></svg>C'est toujours là</button>`;
+ act.querySelector('.seen').onclick=async()=>{
+  try{await updateDoc(doc(db,'places',id),{ok:increment(1),last:new Date().toISOString()});
+   $('#sh-place').classList.remove('on');celebrate('Merci pour la confirmation',award('confirm'));
+  }catch{toast('Impossible pour le moment')}};
+ $('#sh-place').classList.add('on')}
+
 $('#d-close').onclick=()=>$('#sh-det').classList.remove('on');
+$('#q-close').onclick=()=>$('#sh-place').classList.remove('on');
 $('#legal-close').onclick=()=>$('#sh-legal').classList.remove('on');
 document.querySelectorAll('.sheet').forEach(s=>s.onclick=e=>{if(e.target===s)s.classList.remove('on')});
 
 /* écran d'accueil : une seule fois, la première ouverture */
-const INTRO='catmap.intro.v1';
+const INTRO='catmap.intro.v2';
 try{if(!localStorage.getItem(INTRO))$('#intro').classList.add('on')}catch{}
 $('#intro-go').onclick=()=>{
  try{localStorage.setItem(INTRO,'1')}catch{}
  $('#intro').classList.remove('on')};
 $('#intro-legal').onclick=e=>{e.preventDefault();$('#sh-legal').classList.add('on')};
 
+paintLevel();
+/* la carte est la vue d'accueil : on la monte tout de suite, sans attendre
+   ni un clic de navigation ni les premières données */
+drawMap();
 onSnapshot(catsCol,snap=>{
  cats=snap.docs.map(d=>({id:d.id,...d.data()}));
  updateBadge();
- if(view==='map'&&map)drawMap();
+ if(view==='map')drawMap();
  if(view==='list')drawList();
+ if(view==='me')drawMe();
 },()=>toast('Connexion au serveur impossible — mode hors ligne'));
+onSnapshot(placesCol,snap=>{
+ places=snap.docs.map(d=>({id:d.id,...d.data()}));
+ if(view==='map')drawMap();
+ if(view==='list')drawList();
+ if(view==='me')drawMe();
+},()=>{});
 
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
