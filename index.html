@@ -3,7 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
-<meta name="theme-color" content="#ee5a6f">
+<meta name="theme-color" content="#f6f4f0" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141210" media="(prefers-color-scheme: dark)">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="CatMap">
@@ -18,178 +19,366 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <title>CatMap</title>
 <style>
+:root{
+ --bg:#f6f4f0; --surface:#fff; --surface-2:#efeae2; --sunk:#ece7de;
+ --ink:#1a1714; --ink-2:#6f665c; --ink-3:#a2988c;
+ --line:#e7e1d7;
+ --brand:#4b40d9; --brand-ink:#fff; --brand-soft:#ecebfd;
+ --danger:#d92d20; --danger-ink:#fff; --danger-soft:#fdeceb;
+ --ok:#15803d; --ok-soft:#e6f4ea;
+ --shadow:0 1px 2px rgba(26,23,20,.05),0 10px 28px rgba(26,23,20,.07);
+ --shadow-lg:0 20px 50px rgba(26,23,20,.16);
+ --r:16px; --r-lg:22px; --r-xl:28px;
+}
+@media (prefers-color-scheme:dark){
+:root{
+ --bg:#141210; --surface:#1f1b18; --surface-2:#2a2521; --sunk:#100e0c;
+ --ink:#f6f2eb; --ink-2:#a89d90; --ink-3:#7b7166;
+ --line:#332d27;
+ --brand:#8f86ff; --brand-ink:#141033; --brand-soft:#262150;
+ --danger:#f87171; --danger-ink:#2b1110; --danger-soft:#3a1c1a;
+ --ok:#5ddb92; --ok-soft:#16301f;
+ --shadow:0 1px 2px rgba(0,0,0,.5),0 10px 28px rgba(0,0,0,.4);
+ --shadow-lg:0 20px 50px rgba(0,0,0,.6);
+}
+}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f5f5f7;color:#1a1a1a;overscroll-behavior:none}
-button{-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+ background:var(--bg);color:var(--ink);overscroll-behavior:none;
+ -webkit-font-smoothing:antialiased;letter-spacing:-.01em}
+button,input{font-family:inherit;color:inherit}
+svg{display:block}
+
 .app{display:flex;flex-direction:column;height:100dvh}
-header{background:linear-gradient(120deg,#ee5a6f,#ff8a5c);color:#fff;padding:calc(env(safe-area-inset-top) + 14px) 16px 14px;text-align:center;flex-shrink:0;position:relative;overflow:hidden}
-header b{font-size:19px;font-weight:800;letter-spacing:.2px;position:relative}
-header .paw{position:absolute;font-size:60px;opacity:.15;transform:rotate(-18deg)}
-header .p1{left:-10px;top:-14px}
-header .p2{right:-8px;top:-6px;transform:rotate(20deg)}
+
+header{display:flex;align-items:center;gap:8px;flex-shrink:0;
+ padding:calc(env(safe-area-inset-top) + 14px) 20px 12px}
+header .mark{width:26px;height:26px;border-radius:8px;background:var(--brand);
+ color:var(--brand-ink);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+header .mark svg{width:16px;height:16px}
+header b{font-size:17px;font-weight:750;letter-spacing:-.03em}
+
 main{flex:1;overflow:hidden;position:relative}
-.view{position:absolute;inset:0;overflow-y:auto;opacity:0;visibility:hidden;transition:opacity .22s ease;-webkit-overflow-scrolling:touch}
+.view{position:absolute;inset:0;overflow-y:auto;opacity:0;visibility:hidden;
+ transition:opacity .2s ease;-webkit-overflow-scrolling:touch}
 .view.on{opacity:1;visibility:visible}
-#map{width:100%;height:100%}
-nav{display:flex;background:#fff;border-top:1px solid #e5e5e5;padding-bottom:env(safe-area-inset-bottom);flex-shrink:0}
-nav button{flex:1;border:0;background:none;padding:10px 4px;font-size:11px;color:#8a8a8e;display:flex;flex-direction:column;align-items:center;gap:3px;font-family:inherit;transition:color .2s,transform .15s}
-nav button.on{color:#ee5a6f}
-nav button.on .ic{transform:translateY(-2px) scale(1.12)}
-nav button:active{transform:scale(.92)}
-nav .ic{font-size:20px;line-height:1;transition:transform .2s}
-.pad{padding:16px 16px 32px}
+.pad{padding:4px 20px 32px}
 
-/* wizard */
+/* ---- barre de navigation ---- */
+nav{display:flex;gap:4px;flex-shrink:0;padding:8px 14px calc(env(safe-area-inset-bottom) + 8px);
+ background:var(--bg);border-top:1px solid var(--line)}
+nav button{flex:1;border:0;background:none;padding:8px 4px 6px;border-radius:14px;
+ font-size:11px;font-weight:600;color:var(--ink-3);
+ display:flex;flex-direction:column;align-items:center;gap:5px;position:relative;
+ transition:color .18s,background .18s}
+nav button svg{width:23px;height:23px;stroke-width:1.7}
+nav button.on{color:var(--brand);background:var(--brand-soft)}
+nav button:active{transform:scale(.94)}
+.nbadge{position:absolute;top:3px;right:calc(50% - 20px);min-width:17px;height:17px;
+ border-radius:9px;background:var(--danger);color:var(--danger-ink);font-size:10px;font-weight:800;
+ display:flex;align-items:center;justify-content:center;padding:0 5px;
+ box-shadow:0 0 0 2.5px var(--bg)}
+
+/* ---- parcours de signalement ---- */
 .wiz{display:flex;flex-direction:column;height:100%}
-.wiz-bar{display:flex;align-items:center;justify-content:center;gap:8px;padding:18px 16px 6px;flex-shrink:0}
-.wiz-bar .d{width:8px;height:8px;border-radius:50%;background:#e0dfe3;transition:all .3s ease}
-.wiz-bar .d.on{width:22px;border-radius:5px;background:#ee5a6f}
-.wiz-bar .d.done{background:#f3aab4}
+.wiz-bar{display:flex;gap:5px;padding:6px 20px 14px;flex-shrink:0}
+.wiz-bar .d{height:3.5px;flex:1;border-radius:2px;background:var(--sunk);transition:background .3s}
+.wiz-bar .d.done,.wiz-bar .d.on{background:var(--brand)}
+.wiz-bar .d.on{opacity:1}
+.wiz-bar .d.done{opacity:.4}
 .wiz-track{flex:1;overflow:hidden;position:relative}
-.wiz-steps{display:flex;width:500%;height:100%;transition:transform .38s cubic-bezier(.22,1,.36,1)}
-.wiz-step{width:20%;height:100%;overflow-y:auto;padding:8px 18px calc(env(safe-area-inset-bottom) + 20px);-webkit-overflow-scrolling:touch}
-.wiz-head{margin-bottom:18px}
-.wiz-n{font-size:12px;font-weight:700;color:#ee5a6f;text-transform:uppercase;letter-spacing:.5px}
-.wiz-head h2{font-size:22px;margin-top:4px;font-weight:800}
-.wiz-head p{font-size:13px;color:#8a8a8e;margin-top:4px}
-.wiz-nav{display:flex;gap:10px;margin-top:20px}
+.wiz-steps{display:flex;width:500%;height:100%;transition:transform .4s cubic-bezier(.32,.72,0,1)}
+.wiz-step{width:20%;height:100%;overflow-y:auto;
+ padding:2px 20px calc(env(safe-area-inset-bottom) + 20px);-webkit-overflow-scrolling:touch}
+.wiz-head{margin-bottom:22px}
+.wiz-n{font-size:11.5px;font-weight:700;color:var(--ink-3);letter-spacing:.02em}
+.wiz-head h2{font-size:27px;line-height:1.12;margin-top:5px;font-weight:760;letter-spacing:-.035em}
+.wiz-head p{font-size:14.5px;color:var(--ink-2);margin-top:7px;line-height:1.45}
+.wiz-nav{display:flex;gap:10px;margin-top:22px}
+
+/* ---- boutons ---- */
+.go{width:100%;padding:17px;background:var(--brand);color:var(--brand-ink);border:0;
+ border-radius:var(--r);font-size:16px;font-weight:700;letter-spacing:-.01em;margin-top:10px;
+ transition:transform .14s,opacity .2s}
+.go:active:not(:disabled){transform:scale(.975)}
+.go:disabled{opacity:.32}
 .wiz-nav .go{margin-top:0}
-.back{border:0;background:none;color:#6a6a6e;font-size:14px;font-weight:600;font-family:inherit;padding:16px 14px;border-radius:14px;transition:background .15s}
-.back:active{background:#eceaea}
+.back{border:0;background:var(--surface-2);color:var(--ink-2);font-size:15px;font-weight:650;
+ padding:17px 20px;border-radius:var(--r);flex-shrink:0;transition:transform .14s}
+.back:active{transform:scale(.95)}
+.ghost{width:100%;padding:15px;border:1px solid var(--line);background:var(--surface);
+ border-radius:var(--r);font-size:14.5px;font-weight:650;color:var(--ink-2);transition:transform .14s}
+.ghost:active{transform:scale(.975)}
 
-.shot{border:2px dashed #d1b8bd;border-radius:18px;padding:44px 16px;text-align:center;background:#fff;cursor:pointer;display:block;animation:invite 2.4s ease-in-out infinite}
-@keyframes invite{0%,100%{box-shadow:0 0 0 0 rgba(238,90,111,0)}50%{box-shadow:0 0 0 8px rgba(238,90,111,.06)}}
-.shot .ic{font-size:44px;display:block;margin-bottom:8px}
-.shot span.t{font-size:14px;color:#6a6a6e;font-weight:500}
+/* ---- prise de photo ---- */
+.shot{display:block;border:1.5px dashed var(--line);border-radius:var(--r-lg);
+ padding:52px 20px;text-align:center;background:var(--surface);cursor:pointer;
+ transition:border-color .2s,transform .14s}
+.shot:active{transform:scale(.985)}
+.shot .ico{width:46px;height:46px;margin:0 auto 12px;border-radius:15px;
+ background:var(--brand-soft);color:var(--brand);display:flex;align-items:center;justify-content:center}
+.shot .ico svg{width:24px;height:24px}
+.shot b{display:block;font-size:15.5px;font-weight:680}
+.shot span{display:block;font-size:13px;color:var(--ink-3);margin-top:3px}
 .shot input{display:none}
-.shot:active{transform:scale(.98)}
 .prevbox{display:none}
-#prev{width:100%;border-radius:18px;max-height:320px;object-fit:cover;display:block;box-shadow:0 8px 24px rgba(0,0,0,.12)}
-.retake{width:100%;margin-top:10px;padding:13px;border:0;background:#fff;border:1px solid #e5e5e5;border-radius:12px;font-size:13px;font-weight:600;color:#6a6a6e;font-family:inherit}
-.retake:active{transform:scale(.98)}
+#prev{width:100%;border-radius:var(--r-lg);max-height:330px;object-fit:cover;display:block;
+ box-shadow:var(--shadow)}
+.retake{margin-top:10px}
 
-.cols{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.col{aspect-ratio:1.2;border:3px solid transparent;border-radius:16px;font-size:12.5px;font-weight:700;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.45);font-family:inherit;position:relative;transition:transform .18s,box-shadow .18s;box-shadow:0 2px 6px rgba(0,0,0,.08)}
+/* ---- couleurs ---- */
+.cols{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}
+.col{aspect-ratio:1;border:0;border-radius:var(--r-lg);position:relative;overflow:hidden;
+ transition:transform .18s;box-shadow:inset 0 0 0 1px rgba(0,0,0,.07)}
 .col:active{transform:scale(.94)}
-.col.on{border-color:#1a1a1a;transform:scale(1.02);box-shadow:0 6px 16px rgba(0,0,0,.18)}
-.col.on::after{content:'✓';position:absolute;top:6px;right:8px;background:#1a1a1a;color:#fff;width:20px;height:20px;border-radius:50%;font-size:12px;display:flex;align-items:center;justify-content:center;text-shadow:none}
+.col em{position:absolute;left:0;right:0;bottom:0;padding:9px 6px 8px;font-style:normal;
+ font-size:12px;font-weight:700;color:#fff;
+ background:linear-gradient(to top,rgba(0,0,0,.55),transparent)}
+.col.light em{color:#1a1714;background:linear-gradient(to top,rgba(255,255,255,.75),transparent)}
+.col::after{content:'';position:absolute;inset:0;border-radius:var(--r-lg);
+ box-shadow:inset 0 0 0 0 var(--brand);transition:box-shadow .18s}
+.col.on::after{box-shadow:inset 0 0 0 3.5px var(--brand)}
+.col .tick{position:absolute;top:8px;right:8px;width:22px;height:22px;border-radius:50%;
+ background:var(--brand);color:var(--brand-ink);display:none;align-items:center;justify-content:center}
+.col .tick svg{width:13px;height:13px;stroke-width:3}
+.col.on .tick{display:flex}
 
-.sts{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-.st{padding:20px 4px 14px;border:1px solid #e5e5e5;border-radius:16px;background:#fff;font-size:13px;font-weight:600;font-family:inherit;color:#1a1a1a;transition:transform .18s,box-shadow .18s,background .18s,color .18s,border-color .18s}
-.st .sic{display:block;font-size:26px;margin-bottom:6px}
-.st:active{transform:scale(.94)}
-.st.on{background:#ee5a6f;color:#fff;border-color:#ee5a6f;box-shadow:0 6px 16px rgba(238,90,111,.35);transform:translateY(-2px)}
-.st.lost.on{background:#d93025;border-color:#d93025;box-shadow:0 6px 16px rgba(217,48,37,.35)}
+/* ---- situation ---- */
+.sts{display:grid;gap:10px}
+.st{display:flex;align-items:center;gap:13px;text-align:left;padding:16px;
+ border:1px solid var(--line);border-radius:var(--r);background:var(--surface);
+ transition:transform .16s,border-color .16s,background .16s}
+.st:active{transform:scale(.98)}
+.st .si{width:40px;height:40px;border-radius:12px;background:var(--surface-2);color:var(--ink-2);
+ display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .16s,color .16s}
+.st .si svg{width:21px;height:21px}
+.st b{display:block;font-size:15.5px;font-weight:680}
+.st span{display:block;font-size:12.5px;color:var(--ink-3);margin-top:1px}
+.st.on{border-color:var(--brand);background:var(--brand-soft)}
+.st.on .si{background:var(--brand);color:var(--brand-ink)}
+.st.lost.on{border-color:var(--danger);background:var(--danger-soft)}
+.st.lost.on .si{background:var(--danger);color:var(--danger-ink)}
 
-.geo{background:#fff;border:1px solid #e5e5e5;border-radius:14px;padding:14px;font-size:13px;color:#6a6a6e;display:flex;align-items:center;gap:8px;margin-bottom:16px}
-.geo.ok{color:#1a7f37;border-color:#c8e6c9;background:#f3fbf3}
-.recap{display:flex;gap:12px;align-items:center;background:#fff;border-radius:16px;padding:12px;margin-bottom:16px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
-.recap img{width:74px;height:74px;border-radius:12px;object-fit:cover;flex-shrink:0;background:#eee}
-.recap-info{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
-.recap-info b{font-size:16px}
+/* ---- champs ---- */
+.fld{margin-bottom:15px}
+.fld label{display:block;font-size:13.5px;font-weight:680;margin-bottom:7px}
+.fld input{width:100%;padding:16px;border:1px solid var(--line);border-radius:var(--r);
+ font-size:16px;background:var(--surface);transition:border-color .18s}
+.fld input:focus{outline:none;border-color:var(--brand)}
+.fld input::placeholder{color:var(--ink-3)}
+.note{display:flex;gap:9px;background:var(--surface-2);border-radius:14px;padding:13px;
+ font-size:12.5px;color:var(--ink-2);line-height:1.5}
+.note svg{width:16px;height:16px;flex-shrink:0;margin-top:1px;stroke-width:1.9}
 
-.fld{margin-bottom:16px}
-.fld label{display:block;font-size:13px;font-weight:700;margin-bottom:6px}
-.fld input{width:100%;padding:15px;border:1px solid #e5e5e5;border-radius:14px;font-size:16px;font-family:inherit;background:#fff;color:#1a1a1a}
-.fld input:focus{outline:none;border-color:#ee5a6f}
-.fld .hint{font-size:12px;color:#8a8a8e;margin-top:6px;line-height:1.45}
-.warn{background:#fff8e6;border:1px solid #f5d78e;border-radius:12px;padding:11px 13px;font-size:12px;color:#7a5b00;line-height:1.45;margin-bottom:16px}
+/* ---- récap ---- */
+.recap{display:flex;gap:14px;align-items:center;background:var(--surface);
+ border-radius:var(--r-lg);padding:14px;margin-bottom:14px;box-shadow:var(--shadow)}
+.recap img{width:78px;height:78px;border-radius:14px;object-fit:cover;flex-shrink:0;background:var(--surface-2)}
+.recap-i b{display:block;font-size:18px;font-weight:730;letter-spacing:-.02em;margin-bottom:6px}
+.geo{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);
+ border-radius:var(--r);padding:15px;font-size:13.5px;color:var(--ink-2)}
+.geo svg{width:17px;height:17px;flex-shrink:0;stroke-width:1.9}
+.geo.ok{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 32%,transparent)}
 
-.act{display:grid;gap:9px;margin-top:16px}
-.act button{padding:15px;border-radius:14px;border:1px solid #d1d1d6;background:#fff;font-size:14.5px;font-weight:700;font-family:inherit;color:#1a1a1a;transition:transform .15s}
-.act button:active{transform:scale(.97)}
-.act .seen{background:#1a73e8;color:#fff;border-color:#1a73e8}
-.act .found{background:#1a7f37;color:#fff;border-color:#1a7f37}
-.d-contact{background:#fff4f4;border:1px solid #f5c6c2;border-radius:12px;padding:12px 13px;margin-bottom:14px}
-.d-contact b{display:block;font-size:12px;color:#d93025;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
-.d-contact span{font-size:15px;font-weight:600;word-break:break-word}
+/* ---- carte ---- */
+#map{width:100%;height:100%;background:var(--sunk)}
+.leaflet-container{font-family:inherit;background:var(--sunk)}
+/* Les tuiles OpenStreetMap sont libres et sans clé, mais très colorées.
+   On les désature ici pour obtenir un fond neutre sur lequel les marqueurs
+   ressortent — le filtre ne touche que les tuiles, pas les marqueurs. */
+.leaflet-tile-pane{filter:grayscale(.95) contrast(1.08)}
+@media (prefers-color-scheme:dark){
+ /* après inversion le fond et les routes retombent tous les deux près du noir :
+    on remonte la luminosité puis on réduit le contraste pour les redécoller */
+ .leaflet-tile-pane{filter:grayscale(1) invert(1) brightness(1.4) contrast(.8)}
+}
+.leaflet-control-attribution{font-size:9px!important;background:color-mix(in srgb,var(--surface) 82%,transparent)!important;
+ color:var(--ink-3)!important;border-radius:6px 0 0 0;padding:2px 5px!important}
+.leaflet-control-attribution a{color:var(--ink-2)!important}
+.pin{background:none!important;border:0!important}
+.pin i{display:block;width:100%;height:100%;border-radius:50%;background-size:cover;
+ background-position:center;background-color:var(--surface-2);
+ border:3px solid var(--surface);box-shadow:0 3px 12px rgba(0,0,0,.3)}
+.pin i.lost{border-color:var(--danger);box-shadow:0 0 0 0 color-mix(in srgb,var(--danger) 55%,transparent),0 3px 12px rgba(0,0,0,.3);
+ animation:ping 1.9s ease-out infinite}
+@keyframes ping{
+ 0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--danger) 55%,transparent),0 3px 12px rgba(0,0,0,.3)}
+ 70%{box-shadow:0 0 0 14px transparent,0 3px 12px rgba(0,0,0,.3)}
+ 100%{box-shadow:0 0 0 0 transparent,0 3px 12px rgba(0,0,0,.3)}}
+.pin i.found{opacity:.45}
+.me i{display:block;width:100%;height:100%;border-radius:50%;background:#2f7cf6;
+ border:3px solid #fff;box-shadow:0 0 0 7px rgba(47,124,246,.16),0 2px 8px rgba(0,0,0,.35)}
+.map-ui{position:absolute;z-index:500;left:16px;right:16px;top:14px;display:flex;gap:8px;
+ pointer-events:none;flex-wrap:wrap}
+.chip{pointer-events:auto;border:1px solid var(--line);background:color-mix(in srgb,var(--surface) 92%,transparent);
+ -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+ color:var(--ink);border-radius:100px;padding:9px 15px;font-size:13px;font-weight:650;
+ box-shadow:var(--shadow);transition:transform .14s}
+.chip:active{transform:scale(.95)}
+.chip.on{background:var(--brand);color:var(--brand-ink);border-color:transparent}
+.locate{position:absolute;z-index:500;right:16px;bottom:20px;width:48px;height:48px;border-radius:50%;
+ border:1px solid var(--line);background:color-mix(in srgb,var(--surface) 92%,transparent);
+ -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+ color:var(--ink);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);
+ transition:transform .14s}
+.locate:active{transform:scale(.92)}
+.locate svg{width:21px;height:21px;stroke-width:1.9}
 
-.alert{margin:0 0 16px;background:linear-gradient(120deg,#d93025,#ff6b5c);color:#fff;border-radius:16px;padding:15px 16px;display:none;box-shadow:0 6px 18px rgba(217,48,37,.3)}
-.alert.on{display:block;animation:slidein .35s ease}
-@keyframes slidein{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
-.alert b{display:block;font-size:15px;margin-bottom:3px}
-.alert span{font-size:13px;opacity:.95}
-
-.err{color:#d93025;font-size:12px;margin-top:8px;display:none}
-.err.on{display:block}
-.go{width:100%;padding:17px;background:#ee5a6f;color:#fff;border:0;border-radius:16px;font-size:16px;font-weight:700;font-family:inherit;margin-top:8px;transition:transform .15s,opacity .2s;box-shadow:0 6px 16px rgba(238,90,111,.3)}
-.go:active:not(:disabled){transform:scale(.97)}
-.go:disabled{opacity:.4;box-shadow:none}
-
-.toast{position:fixed;left:16px;right:16px;bottom:calc(env(safe-area-inset-bottom) + 76px);background:#1a1a1a;color:#fff;padding:13px 16px;border-radius:14px;font-size:13px;text-align:center;z-index:900;opacity:0;transform:translateY(10px);transition:opacity .25s,transform .25s;pointer-events:none}
-.toast.on{opacity:.96;transform:translateY(0)}
-
-.success{position:fixed;inset:0;background:rgba(26,26,26,.55);z-index:1100;display:flex;align-items:center;justify-content:center;opacity:0;visibility:hidden;transition:opacity .25s}
-.success.on{opacity:1;visibility:visible}
-.success-card{background:#fff;border-radius:22px;padding:34px 30px;text-align:center;transform:scale(.7);transition:transform .35s cubic-bezier(.34,1.56,.64,1)}
-.success.on .success-card{transform:scale(1)}
-.success-ic{font-size:52px;display:block;margin-bottom:10px;animation:bounce .6s ease}
-@keyframes bounce{0%{transform:scale(0)}60%{transform:scale(1.2)}100%{transform:scale(1)}}
-.success-card b{font-size:16px;display:block}
-
-.sheet{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:flex;align-items:flex-end;opacity:0;visibility:hidden;transition:opacity .25s}
-.sheet.on{opacity:1;visibility:visible}
-.card{background:#fff;width:100%;border-radius:22px 22px 0 0;padding:22px 18px calc(env(safe-area-inset-bottom) + 22px);max-height:88dvh;overflow-y:auto;transform:translateY(100%);transition:transform .32s cubic-bezier(.22,1,.36,1)}
-.sheet.on .card{transform:translateY(0)}
-.card h2{font-size:18px;margin-bottom:8px;font-weight:800}
-.card p{font-size:13px;color:#6a6a6e;line-height:1.5;margin-bottom:14px}
-.card img{width:100%;height:220px;object-fit:cover;border-radius:16px;margin-bottom:16px;background:#eee}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.two button{padding:16px;border-radius:14px;border:1px solid #d1d1d6;background:#fff;font-size:14px;font-weight:700;font-family:inherit;color:#1a1a1a;transition:transform .15s}
-.two button:active{transform:scale(.96)}
-.two .y{background:#1a7f37;color:#fff;border-color:#1a7f37}
-.row{display:flex;justify-content:space-between;padding:11px 0;border-bottom:1px solid #f0f0f0;font-size:14px}
-.row:last-child{border:0}
-.row span:first-child{color:#8a8a8e}
-.row span:last-child{font-weight:600}
-.stat{background:#fff;border-radius:16px;padding:20px;display:grid;grid-template-columns:repeat(3,1fr);text-align:center;margin-bottom:18px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
-.stat b{display:block;font-size:27px;background:linear-gradient(120deg,#ee5a6f,#ff8a5c);-webkit-background-clip:text;background-clip:text;color:transparent}
-.stat small{font-size:11px;color:#8a8a8e}
-.list{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,.06)}
-.item{display:flex;align-items:center;gap:12px;padding:13px 14px;border-bottom:1px solid #f0f0f0;transition:background .15s}
-.item:active{background:#f7f7f8}
+/* ---- liste ---- */
+.alert{display:none;gap:13px;align-items:center;background:var(--danger);color:var(--danger-ink);
+ border-radius:var(--r-lg);padding:15px 16px;margin-bottom:16px;box-shadow:var(--shadow)}
+.alert.on{display:flex;animation:rise .38s cubic-bezier(.32,.72,0,1)}
+@keyframes rise{from{opacity:0;transform:translateY(-7px)}to{opacity:1;transform:translateY(0)}}
+.alert svg{width:22px;height:22px;flex-shrink:0;stroke-width:1.9}
+.alert b{display:block;font-size:14.5px;font-weight:720}
+.alert span{display:block;font-size:12.5px;opacity:.9;margin-top:2px;line-height:1.4}
+.stat{display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface);
+ border-radius:var(--r-lg);padding:19px 12px;text-align:center;margin-bottom:14px;box-shadow:var(--shadow)}
+.stat b{display:block;font-size:26px;font-weight:740;letter-spacing:-.04em}
+.stat small{display:block;font-size:11.5px;color:var(--ink-3);margin-top:2px}
+.list{background:var(--surface);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow)}
+.item{display:flex;align-items:center;gap:13px;padding:13px 15px;border-bottom:1px solid var(--line);
+ transition:background .15s}
 .item:last-child{border:0}
-.dot{width:36px;height:36px;border-radius:50%;flex-shrink:0;border:1px solid rgba(0,0,0,.1)}
-.item div{flex:1;min-width:0}
-.item b{display:block;font-size:14px}
-.item small{font-size:12px;color:#8a8a8e}
-.empty{text-align:center;padding:60px 20px;color:#8a8a8e;font-size:14px}
-.empty .ic{font-size:40px;display:block;margin-bottom:10px}
-.badge{font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;background:#f0f0f0;color:#6a6a6e}
-.badge.lost{background:#fce8e6;color:#d93025}
-.badge.ok{background:#e6f4ea;color:#1a7f37}
-.item.found .dot,.item.found b{opacity:.55}
-nav button{position:relative}
-.nbadge{position:absolute;top:5px;right:calc(50% - 24px);min-width:17px;height:17px;border-radius:9px;background:#d93025;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 5px;box-shadow:0 0 0 2px #fff}
+.item:active{background:var(--surface-2)}
+.dot{width:46px;height:46px;border-radius:14px;flex-shrink:0;background-size:cover;
+ background-position:center;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+.item .txt{flex:1;min-width:0}
+.item b{display:block;font-size:15px;font-weight:680;letter-spacing:-.015em}
+.item small{display:block;font-size:12.5px;color:var(--ink-3);margin-top:1px}
+.item.found .dot,.item.found b{opacity:.5}
+.badge{font-size:11px;font-weight:700;padding:5px 10px;border-radius:100px;
+ background:var(--surface-2);color:var(--ink-2);flex-shrink:0}
+.badge.lost{background:var(--danger-soft);color:var(--danger)}
+.badge.ok{background:var(--ok-soft);color:var(--ok)}
+.empty{text-align:center;padding:70px 24px;color:var(--ink-3)}
+.empty .ico{width:56px;height:56px;margin:0 auto 16px;border-radius:19px;background:var(--surface-2);
+ color:var(--ink-3);display:flex;align-items:center;justify-content:center}
+.empty .ico svg{width:28px;height:28px}
+.empty b{display:block;font-size:16px;color:var(--ink);font-weight:680;margin-bottom:5px}
+.empty span{font-size:13.5px;line-height:1.5}
+.about{margin-top:18px;padding:0 4px}
+.about p{font-size:12.5px;color:var(--ink-3);line-height:1.55}
+.about a{color:var(--brand);font-weight:650;text-decoration:none}
 
-/* les mentions légales s'ouvrent aussi depuis l'écran d'accueil : elles doivent passer devant */
-#sh-legal{z-index:1300}
-.intro{position:fixed;inset:0;z-index:1200;background:linear-gradient(160deg,#ee5a6f,#ff8a5c);color:#fff;display:flex;flex-direction:column;justify-content:center;padding:32px 26px calc(env(safe-area-inset-bottom) + 26px);opacity:0;visibility:hidden;transition:opacity .3s}
+/* ---- panneaux ---- */
+.sheet{position:fixed;inset:0;background:rgba(10,8,6,.5);-webkit-backdrop-filter:blur(3px);
+ backdrop-filter:blur(3px);z-index:1000;display:flex;align-items:flex-end;
+ opacity:0;visibility:hidden;transition:opacity .25s}
+.sheet.on{opacity:1;visibility:visible}
+.card{background:var(--surface);width:100%;border-radius:var(--r-xl) var(--r-xl) 0 0;
+ padding:10px 20px calc(env(safe-area-inset-bottom) + 20px);max-height:90dvh;overflow-y:auto;
+ transform:translateY(100%);transition:transform .38s cubic-bezier(.32,.72,0,1);box-shadow:var(--shadow-lg)}
+.sheet.on .card{transform:translateY(0)}
+.grab{width:38px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 16px}
+.card h2{font-size:21px;font-weight:740;letter-spacing:-.03em;margin-bottom:10px}
+.card>p,.card p.t{font-size:14px;color:var(--ink-2);line-height:1.55;margin-bottom:14px}
+.card img.hero{width:100%;height:230px;object-fit:cover;border-radius:var(--r-lg);
+ margin-bottom:16px;background:var(--surface-2)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.two button{padding:16px;border-radius:var(--r);border:1px solid var(--line);background:var(--surface);
+ font-size:14.5px;font-weight:700;transition:transform .14s}
+.two button:active{transform:scale(.96)}
+.two .y{background:var(--brand);color:var(--brand-ink);border-color:transparent}
+.row{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line);font-size:14px}
+.row:last-child{border:0}
+.row span:first-child{color:var(--ink-3)}
+.row span:last-child{font-weight:650}
+.act{display:grid;gap:9px;margin-top:16px}
+.act button{padding:16px;border-radius:var(--r);border:1px solid var(--line);background:var(--surface);
+ font-size:15px;font-weight:700;transition:transform .14s;display:flex;align-items:center;
+ justify-content:center;gap:8px}
+.act button svg{width:18px;height:18px;stroke-width:2}
+.act button:active{transform:scale(.975)}
+.act .seen{background:var(--brand);color:var(--brand-ink);border-color:transparent}
+.act .found{background:var(--ok);color:#fff;border-color:transparent}
+.contact{display:flex;gap:12px;align-items:center;background:var(--danger-soft);
+ border-radius:var(--r);padding:14px;margin-bottom:14px}
+.contact .ci{width:38px;height:38px;border-radius:12px;background:var(--danger);color:var(--danger-ink);
+ display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.contact .ci svg{width:19px;height:19px}
+.contact small{display:block;font-size:11.5px;font-weight:700;color:var(--danger);
+ text-transform:uppercase;letter-spacing:.03em}
+.contact span{display:block;font-size:16px;font-weight:700;word-break:break-word;margin-top:1px}
+
+/* ---- notifications ---- */
+.toast{position:fixed;left:20px;right:20px;bottom:calc(env(safe-area-inset-bottom) + 80px);
+ background:var(--ink);color:var(--bg);padding:14px 17px;border-radius:var(--r);font-size:13.5px;
+ font-weight:600;text-align:center;z-index:900;opacity:0;transform:translateY(10px);
+ transition:opacity .25s,transform .25s;pointer-events:none}
+.toast.on{opacity:1;transform:translateY(0)}
+.ok-veil{position:fixed;inset:0;background:rgba(10,8,6,.5);-webkit-backdrop-filter:blur(3px);
+ backdrop-filter:blur(3px);z-index:1100;display:flex;align-items:center;justify-content:center;
+ opacity:0;visibility:hidden;transition:opacity .25s}
+.ok-veil.on{opacity:1;visibility:visible}
+.ok-card{background:var(--surface);border-radius:var(--r-xl);padding:34px 32px;text-align:center;
+ transform:scale(.82);transition:transform .42s cubic-bezier(.34,1.4,.5,1);box-shadow:var(--shadow-lg)}
+.ok-veil.on .ok-card{transform:scale(1)}
+.ok-card .ico{width:60px;height:60px;margin:0 auto 14px;border-radius:50%;background:var(--ok-soft);
+ color:var(--ok);display:flex;align-items:center;justify-content:center}
+.ok-card .ico svg{width:30px;height:30px;stroke-width:2.4}
+.ok-card b{font-size:16.5px;font-weight:700}
+
+/* ---- écran d'accueil ---- */
+.intro{position:fixed;inset:0;z-index:1200;background:var(--bg);display:flex;flex-direction:column;
+ justify-content:center;padding:36px 26px calc(env(safe-area-inset-bottom) + 26px);
+ opacity:0;visibility:hidden;transition:opacity .3s}
 .intro.on{opacity:1;visibility:visible}
-.intro h1{font-size:31px;font-weight:800;line-height:1.15;margin-bottom:8px}
-.intro .sub{font-size:15px;opacity:.92;margin-bottom:30px;line-height:1.5}
-.intro ul{list-style:none;margin-bottom:34px}
-.intro li{display:flex;gap:13px;align-items:flex-start;margin-bottom:19px}
-.intro li .e{font-size:26px;line-height:1.1;flex-shrink:0}
-.intro li b{display:block;font-size:15.5px;margin-bottom:2px}
-.intro li span{font-size:13.5px;opacity:.9;line-height:1.45}
-.intro button{width:100%;padding:17px;border:0;border-radius:16px;background:#fff;color:#ee5a6f;font-size:16px;font-weight:800;font-family:inherit}
-.intro button:active{transform:scale(.97)}
-.intro .legal{text-align:center;font-size:11.5px;opacity:.85;margin-top:15px;line-height:1.5}
-.intro .legal a{color:#fff;text-decoration:underline}
-
-.about{background:#fff;border-radius:16px;padding:17px;margin-top:18px;box-shadow:0 2px 10px rgba(0,0,0,.06)}
-.about h3{font-size:14px;margin-bottom:8px}
-.about p{font-size:12.5px;color:#6a6a6e;line-height:1.55;margin-bottom:8px}
-.about p:last-child{margin-bottom:0}
-
-.leaflet-interactive.m-lost{animation:markerpulse 1.5s ease-in-out infinite}
-@keyframes markerpulse{0%,100%{stroke-opacity:1}50%{stroke-opacity:.35}}
+.intro .mark{width:52px;height:52px;border-radius:17px;background:var(--brand);color:var(--brand-ink);
+ display:flex;align-items:center;justify-content:center;margin-bottom:22px}
+.intro .mark svg{width:29px;height:29px}
+.intro h1{font-size:33px;font-weight:770;line-height:1.1;letter-spacing:-.04em;margin-bottom:10px}
+.intro .sub{font-size:15.5px;color:var(--ink-2);line-height:1.5;margin-bottom:34px}
+.intro ul{list-style:none;margin-bottom:32px}
+.intro li{display:flex;gap:14px;align-items:flex-start;margin-bottom:20px}
+.intro li .li{width:38px;height:38px;border-radius:12px;background:var(--brand-soft);color:var(--brand);
+ display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.intro li .li svg{width:19px;height:19px}
+.intro li b{display:block;font-size:15.5px;font-weight:680}
+.intro li span{display:block;font-size:13.5px;color:var(--ink-2);line-height:1.45;margin-top:2px}
+.intro .legal{text-align:center;font-size:11.5px;color:var(--ink-3);margin-top:14px;line-height:1.5}
+.intro .legal a{color:var(--ink-2);font-weight:650}
+#sh-legal{z-index:1300}
 </style>
 </head>
 <body>
+
+<svg style="display:none">
+<symbol id="i-paw" viewBox="0 0 24 24" fill="currentColor">
+ <ellipse cx="6.3" cy="10" rx="2.2" ry="2.8"/><ellipse cx="10.8" cy="7" rx="2.2" ry="3"/>
+ <ellipse cx="15.6" cy="7.2" rx="2.2" ry="3"/><ellipse cx="19.3" cy="10.6" rx="2.1" ry="2.6"/>
+ <path d="M12.7 12.6c2.5 0 4.6 1.7 5.3 3.6.8 2.2-.9 4.2-3.1 4.2-1 0-1.6-.3-2.2-.3s-1.2.3-2.2.3c-2.2 0-3.9-2-3.1-4.2.7-1.9 2.8-3.6 5.3-3.6z"/>
+</symbol>
+<symbol id="i-cam" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+ <path d="M3 9a2.5 2.5 0 0 1 2.5-2.5h1.1a1 1 0 0 0 .84-.46l.86-1.33a1 1 0 0 1 .84-.46h5.72a1 1 0 0 1 .84.46l.86 1.33a1 1 0 0 0 .84.46h1.1A2.5 2.5 0 0 1 21 9v8.5A2.5 2.5 0 0 1 18.5 20h-13A2.5 2.5 0 0 1 3 17.5z"/>
+ <circle cx="12" cy="13" r="3.5"/></symbol>
+<symbol id="i-map" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+ <path d="M9 4 3.5 6.3v13.4L9 17.4l6 2.3 5.5-2.3V4L15 6.3z"/><path d="M9 4v13.4M15 6.3v13.4"/></symbol>
+<symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+ <path d="M10.3 3.9 2.4 17.3a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>
+ <path d="M12 9v4.2M12 17h.01"/></symbol>
+<symbol id="i-walk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+ <circle cx="13" cy="4.5" r="2"/><path d="M11 21l1.6-5.4L10 13l1-5 3.4 2.2 2.6.8"/><path d="M12.6 15.6 9 21M10.6 9.5 7.5 11"/></symbol>
+<symbol id="i-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+ <path d="M2.2 12S5.8 5.5 12 5.5 21.8 12 21.8 12 18.2 18.5 12 18.5 2.2 12 2.2 12z"/><circle cx="12" cy="12" r="3"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+ <path d="M4.5 12.5 9.5 17.5 19.5 6.5"/></symbol>
+<symbol id="i-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+ <path d="M12 21s7-5.7 7-11a7 7 0 1 0-14 0c0 5.3 7 11 7 11z"/><circle cx="12" cy="10" r="2.6"/></symbol>
+<symbol id="i-locate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+ <circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.4"/><path d="M12 2v3M12 19v3M22 12h-3M5 12H2"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+ <circle cx="12" cy="12" r="9.2"/><path d="M12 11v5.5M12 7.6h.01"/></symbol>
+<symbol id="i-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+ <path d="M21 16.9v2.6a1.8 1.8 0 0 1-2 1.8 17.6 17.6 0 0 1-7.7-2.7 17.3 17.3 0 0 1-5.3-5.3A17.6 17.6 0 0 1 3.3 5.6 1.8 1.8 0 0 1 5.1 3.6h2.6a1.8 1.8 0 0 1 1.8 1.5c.1.9.3 1.7.6 2.5a1.8 1.8 0 0 1-.4 1.9l-1.1 1.1a14 14 0 0 0 5.3 5.3l1.1-1.1a1.8 1.8 0 0 1 1.9-.4c.8.3 1.6.5 2.5.6a1.8 1.8 0 0 1 1.6 1.9z"/></symbol>
+</svg>
+
 <div class="app">
-<header><span class="paw p1">🐾</span><span class="paw p2">🐾</span><b>CatMap</b></header>
+<header>
+  <span class="mark"><svg><use href="#i-paw"/></svg></span>
+  <b>CatMap</b>
+</header>
 <main>
 
 <section id="v-add" class="view on"><div class="wiz">
@@ -197,108 +386,136 @@ nav button{position:relative}
   <div class="wiz-track"><div class="wiz-steps" id="wiz-steps">
 
     <div class="wiz-step" data-step="1">
-      <div class="wiz-head"><span class="wiz-n" data-n></span><h2>Une photo du chat</h2><p>Ça aide tes voisins à le reconnaître.</p></div>
-      <label class="shot" id="shotbox"><span class="ic">📷</span><span class="t">Prendre une photo du chat</span>
+      <div class="wiz-head"><span class="wiz-n" data-n></span><h2>Une photo du chat</h2>
+        <p>C'est ce qui permet à tes voisins de le reconnaître.</p></div>
+      <label class="shot" id="shotbox">
+        <span class="ico"><svg><use href="#i-cam"/></svg></span>
+        <b>Prendre une photo</b><span>Ou en choisir une existante</span>
         <input type="file" id="file" accept="image/*" capture="environment"></label>
-      <div class="prevbox" id="prevbox"><img id="prev" alt=""><button class="retake" id="retake">🔄 Reprendre une photo</button></div>
-      <div class="err" id="e-photo">Ajoute une photo pour continuer</div>
-      <button class="go" id="n1" disabled>Suivant</button>
+      <div class="prevbox" id="prevbox"><img id="prev" alt="Photo du chat">
+        <button class="ghost retake" id="retake">Reprendre la photo</button></div>
+      <button class="go" id="n1" disabled>Continuer</button>
     </div>
 
     <div class="wiz-step" data-step="2">
-      <div class="wiz-head"><span class="wiz-n" data-n></span><h2>De quelle couleur ?</h2><p>Choisis celle qui ressemble le plus.</p></div>
+      <div class="wiz-head"><span class="wiz-n" data-n></span><h2>Sa couleur</h2>
+        <p>Choisis celle qui s'en rapproche le plus.</p></div>
       <div class="cols" id="cols"></div>
-      <div class="err" id="e-col">Choisis une couleur pour continuer</div>
-      <div class="wiz-nav"><button class="back" id="b2">← Retour</button><button class="go" id="n2" disabled>Suivant</button></div>
+      <div class="wiz-nav"><button class="back" id="b2">Retour</button>
+        <button class="go" id="n2" disabled>Continuer</button></div>
     </div>
 
     <div class="wiz-step" data-step="3">
-      <div class="wiz-head"><span class="wiz-n" data-n></span><h2>Que fait-il ?</h2><p>Sa situation en ce moment.</p></div>
+      <div class="wiz-head"><span class="wiz-n" data-n></span><h2>Sa situation</h2>
+        <p>Ce que tu observes en ce moment.</p></div>
       <div class="sts">
-        <button class="st" data-s="Errant"><span class="sic">🐈</span>Errant</button>
-        <button class="st" data-s="Promenade"><span class="sic">🚶</span>Promenade</button>
-        <button class="st lost" data-s="Perdu"><span class="sic">🚨</span>Perdu</button>
+        <button class="st" data-s="Errant"><span class="si"><svg><use href="#i-paw"/></svg></span>
+          <span class="txt"><b>Errant</b><span>Il se promène seul dans le quartier</span></span></button>
+        <button class="st" data-s="Promenade"><span class="si"><svg><use href="#i-walk"/></svg></span>
+          <span class="txt"><b>En promenade</b><span>Il est accompagné de quelqu'un</span></span></button>
+        <button class="st lost" data-s="Perdu"><span class="si"><svg><use href="#i-alert"/></svg></span>
+          <span class="txt"><b>Perdu</b><span>Il a disparu, on le recherche</span></span></button>
       </div>
-      <div class="err" id="e-st">Choisis une situation pour continuer</div>
-      <div class="wiz-nav"><button class="back" id="b3">← Retour</button><button class="go" id="n3" disabled>Suivant</button></div>
+      <div class="wiz-nav"><button class="back" id="b3">Retour</button>
+        <button class="go" id="n3" disabled>Continuer</button></div>
     </div>
 
     <div class="wiz-step" data-step="4">
-      <div class="wiz-head"><span class="wiz-n" data-n></span><h2>Aide à le retrouver</h2><p>Pour que tes voisins puissent te prévenir.</p></div>
-      <div class="fld">
-        <label for="f-name">Son nom</label>
-        <input type="text" id="f-name" maxlength="40" placeholder="Minou" autocomplete="off">
-      </div>
-      <div class="fld">
-        <label for="f-contact">Comment te joindre</label>
-        <input type="text" id="f-contact" maxlength="100" placeholder="06 12 34 56 78" autocomplete="off">
-      </div>
-      <div class="warn">⚠️ Ce que tu écris ici sera visible par tous les utilisateurs de l'app. N'indique que ce que tu acceptes de rendre public.</div>
-      <div class="wiz-nav"><button class="back" id="b4">← Retour</button><button class="go" id="n4">Suivant</button></div>
+      <div class="wiz-head"><span class="wiz-n" data-n></span><h2>Aide à le retrouver</h2>
+        <p>Pour que tes voisins puissent te prévenir.</p></div>
+      <div class="fld"><label for="f-name">Son nom</label>
+        <input type="text" id="f-name" maxlength="40" placeholder="Minou" autocomplete="off"></div>
+      <div class="fld"><label for="f-contact">Comment te joindre</label>
+        <input type="text" id="f-contact" maxlength="100" placeholder="06 12 34 56 78" autocomplete="off"></div>
+      <div class="note"><svg><use href="#i-info"/></svg>
+        <span>Ces informations seront visibles par tous les utilisateurs. N'indique que ce que tu acceptes de rendre public.</span></div>
+      <div class="wiz-nav"><button class="back" id="b4">Retour</button>
+        <button class="go" id="n4">Continuer</button></div>
     </div>
 
     <div class="wiz-step" data-step="5">
-      <div class="wiz-head"><span class="wiz-n" data-n></span><h2>C'est prêt !</h2><p>Vérifie et envoie.</p></div>
-      <div class="recap"><img id="r-img" alt=""><div class="recap-info"><b id="r-col"></b><span class="badge" id="r-st"></span></div></div>
-      <div class="geo" id="geo">📍 Localisation en cours…</div>
-      <div class="wiz-nav"><button class="back" id="b5">← Retour</button><button class="go" id="go">Signaler ce chat</button></div>
+      <div class="wiz-head"><span class="wiz-n" data-n></span><h2>Tout est prêt</h2>
+        <p>Un dernier coup d'œil avant d'envoyer.</p></div>
+      <div class="recap"><img id="r-img" alt="">
+        <div class="recap-i"><b id="r-col"></b><span class="badge" id="r-st"></span></div></div>
+      <div class="geo" id="geo"><svg><use href="#i-pin"/></svg><span id="geo-t">Localisation en cours…</span></div>
+      <div class="wiz-nav"><button class="back" id="b5">Retour</button>
+        <button class="go" id="go">Signaler ce chat</button></div>
     </div>
 
   </div></div>
 </div></section>
 
-<section id="v-map" class="view"><div id="map"></div></section>
+<section id="v-map" class="view">
+  <div id="map"></div>
+  <div class="map-ui">
+    <button class="chip on" id="f-all">Tous</button>
+    <button class="chip" id="f-lost">Perdus</button>
+  </div>
+  <button class="locate" id="locate" aria-label="Me localiser"><svg><use href="#i-locate"/></svg></button>
+</section>
 
 <section id="v-list" class="view"><div class="pad" id="list-pad"></div></section>
 
 </main>
 <nav>
-  <button class="on" data-v="add"><span class="ic">📷</span>Signaler</button>
-  <button data-v="map"><span class="ic">🗺️</span>Carte</button>
-  <button data-v="list"><span class="ic">📋</span>Chats</button>
+  <button class="on" data-v="add"><svg><use href="#i-cam"/></svg>Signaler</button>
+  <button data-v="map"><svg><use href="#i-map"/></svg>Carte</button>
+  <button data-v="list"><svg><use href="#i-paw"/></svg>Les chats</button>
 </nav>
 </div>
 
 <div class="intro" id="intro">
+  <span class="mark"><svg><use href="#i-paw"/></svg></span>
   <h1>Les chats du quartier,<br>sur une seule carte.</h1>
   <p class="sub">Chacun signale ce qu'il croise. Ensemble, on retrouve ceux qui se sont perdus.</p>
   <ul>
-    <li><span class="e">📷</span><div><b>Tu croises un chat</b><span>Une photo, sa couleur, et il apparaît sur la carte.</span></div></li>
-    <li><span class="e">🚨</span><div><b>Le tien a disparu</b><span>Signale-le perdu et laisse un contact : tes voisins sont prévenus.</span></div></li>
-    <li><span class="e">👀</span><div><b>Tu l'aperçois</b><span>Un bouton, et son maître sait où il était.</span></div></li>
+    <li><span class="li"><svg><use href="#i-cam"/></svg></span>
+      <div><b>Tu croises un chat</b><span>Une photo, sa couleur, et il apparaît sur la carte.</span></div></li>
+    <li><span class="li"><svg><use href="#i-alert"/></svg></span>
+      <div><b>Le tien a disparu</b><span>Signale-le perdu et laisse un contact : tes voisins sont prévenus.</span></div></li>
+    <li><span class="li"><svg><use href="#i-eye"/></svg></span>
+      <div><b>Tu l'aperçois</b><span>Un bouton, et son maître sait où il était.</span></div></li>
   </ul>
-  <button id="intro-go">Commencer</button>
-  <p class="legal">En continuant, tu acceptes que tes signalements (photo, position, informations saisies) soient visibles publiquement. <a href="#" id="intro-legal">En savoir plus</a></p>
+  <button class="go" id="intro-go" style="margin-top:0">Commencer</button>
+  <p class="legal">En continuant, tu acceptes que tes signalements soient visibles publiquement.
+    <a href="#" id="intro-legal">En savoir plus</a></p>
 </div>
 
 <div class="toast" id="toast"></div>
 
-<div class="success" id="success"><div class="success-card"><span class="success-ic">🎉</span><b id="success-msg"></b></div></div>
+<div class="ok-veil" id="okv"><div class="ok-card">
+  <span class="ico"><svg><use href="#i-check"/></svg></span><b id="ok-msg"></b></div></div>
+
+<div class="sheet" id="sh-legal"><div class="card">
+  <div class="grab"></div>
+  <h2>Vie privée et données</h2>
+  <p class="t"><b>Ce qui est public.</b> Tout signalement — la photo, la position approximative, la couleur, la situation, et le nom et contact que tu saisis pour un chat perdu — est visible par tous les utilisateurs. N'indique jamais une information que tu ne veux pas rendre publique.</p>
+  <p class="t"><b>Ta position.</b> Elle sert uniquement à placer le chat sur la carte et à calculer les distances. Elle n'est ni enregistrée en continu, ni associée à ton identité.</p>
+  <p class="t"><b>Aucun compte.</b> L'app ne demande ni e-mail, ni mot de passe, et ne conserve aucun identifiant personnel. Les données sont hébergées par Google Firebase (Firestore, région Europe).</p>
+  <p class="t"><b>Effacer un signalement.</b> L'app ne permet pas encore de supprimer une fiche soi-même. Écris-nous et nous la retirerons.</p>
+  <p class="t"><b>Chats perdus.</b> CatMap est un outil d'entraide entre voisins. Elle ne remplace ni la mairie, ni un vétérinaire, ni le fichier national I-CAD.</p>
+  <button class="go" id="legal-close">Fermer</button>
+</div></div>
 
 <div class="sheet" id="sh-match"><div class="card">
-  <h2>Chat déjà vu ici</h2>
+  <div class="grab"></div>
+  <h2>Ce chat est déjà connu ?</h2>
   <p>Un chat <b id="m-col"></b> a été signalé à <b id="m-dist"></b> d'ici. C'est le même ?</p>
-  <img id="m-img" alt="">
+  <img class="hero" id="m-img" alt="">
   <div class="two"><button class="y" id="m-yes">Oui, le même</button><button id="m-no">Non, un autre</button></div>
 </div></div>
 
-<div class="sheet" id="sh-legal"><div class="card">
-  <h2>Vie privée et données</h2>
-  <p><b>Ce qui est public.</b> Tout signalement — la photo, la position approximative, la couleur, la situation, et le nom et contact que tu saisis pour un chat perdu — est visible par tous les utilisateurs de l'app. N'indique jamais une information que tu ne veux pas rendre publique.</p>
-  <p><b>Ta position.</b> Elle sert uniquement à placer le chat sur la carte et à calculer les distances. Elle n'est ni enregistrée en continu, ni associée à ton identité.</p>
-  <p><b>Aucun compte.</b> L'app ne demande ni e-mail, ni mot de passe, et ne conserve aucun identifiant personnel. Les données sont hébergées par Google Firebase (Firestore, région Europe).</p>
-  <p><b>Effacer un signalement.</b> L'app ne permet pas encore de supprimer une fiche soi-même. Écris-nous et nous la retirerons.</p>
-  <p><b>Chats perdus.</b> CatMap est un outil d'entraide entre voisins. Elle ne remplace ni la mairie, ni un vétérinaire, ni le fichier national I-CAD.</p>
-  <button class="go" id="legal-close" style="margin-top:8px">Fermer</button>
-</div></div>
-
 <div class="sheet" id="sh-det"><div class="card">
+  <div class="grab"></div>
   <h2 id="d-title"></h2>
-  <img id="d-img" alt="">
-  <div class="d-contact" id="d-contact" style="display:none"><b id="d-contact-lbl">Contact</b><span id="d-contact-val"></span></div>
+  <img class="hero" id="d-img" alt="">
+  <div class="contact" id="d-contact" style="display:none">
+    <span class="ci"><svg><use href="#i-phone"/></svg></span>
+    <div><small id="d-contact-lbl"></small><span id="d-contact-val"></span></div></div>
   <div id="d-rows"></div>
   <div class="act" id="d-act"></div>
-  <button class="go" id="d-close" style="margin-top:14px;background:#fff;color:#6a6a6e;border:1px solid #e5e5e5;box-shadow:none">Fermer</button>
+  <button class="ghost" id="d-close" style="margin-top:10px">Fermer</button>
 </div></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -322,9 +539,14 @@ const db=initializeFirestore(app,{localCache:persistentLocalCache({tabManager:pe
 const catsCol=collection(db,'cats');
 
 const COLORS={Gris:'#9b9b9b',Roux:'#d2691e',Noir:'#2c2c2c',Blanc:'#e8e6e1',Tigré:'#8b6f47',Bicolore:'#6b6b6b'};
-let photo=null,thumb=null,color=null,status=null,pos=null,map=null,layer=null,pending=null,view='add',step=1;
+const LIGHT=['Blanc'];
+let photo=null,thumb=null,color=null,status=null,pos=null,map=null,layer=null,pending=null,
+    view='add',step=1,onlyLost=false;
 let cats=[];
 const photoCache=new Map();
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 /* La photo pleine taille vit dans une collection à part : la carte et la liste
    ne chargent que des fiches légères, la photo n'arrive qu'à l'ouverture. */
@@ -340,10 +562,10 @@ async function loadPhoto(id){
  }catch{return null}
 }
 
-const $=s=>document.querySelector(s);
-
-function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2600)}
-function celebrate(m){$('#success-msg').textContent=m;$('#success').classList.add('on');setTimeout(()=>$('#success').classList.remove('on'),1300)}
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');
+ setTimeout(()=>t.classList.remove('on'),2600)}
+function celebrate(m){$('#ok-msg').textContent=m;$('#okv').classList.add('on');
+ setTimeout(()=>$('#okv').classList.remove('on'),1400)}
 
 function dist(a,b,c,d){const R=6371e3,p=Math.PI/180,x=(c-a)*p,y=(d-b)*p;
  const h=Math.sin(x/2)**2+Math.cos(a*p)*Math.cos(c*p)*Math.sin(y/2)**2;
@@ -364,25 +586,26 @@ function showStep(n){
   if(lbl)lbl.textContent=k<0?'':`Étape ${k+1} sur ${s.length}`});
  if(n===5){
   $('#r-img').src=photo;
-  $('#r-col').textContent=($('#f-name').value.trim()&&status==='Perdu')?$('#f-name').value.trim():color;
+  const nm=$('#f-name').value.trim();
+  $('#r-col').textContent=(nm&&status==='Perdu')?nm:color;
   $('#r-st').textContent=status;$('#r-st').className='badge'+(status==='Perdu'?' lost':'')}
 }
 const next=()=>{const s=seq();showStep(s[Math.min(s.indexOf(step)+1,s.length-1)])};
 const back=()=>{const s=seq();showStep(s[Math.max(s.indexOf(step)-1,0)])};
-
 ['n1','n2','n3','n4'].forEach(id=>$('#'+id).onclick=next);
 ['b2','b3','b4','b5'].forEach(id=>$('#'+id).onclick=back);
 
 $('#cols').innerHTML=Object.entries(COLORS).map(([n,c])=>
- `<button class="col" data-c="${n}" style="background:${c}${n==='Blanc'?';color:#333;text-shadow:none':''}">${n}</button>`).join('');
+ `<button class="col${LIGHT.includes(n)?' light':''}" data-c="${n}" style="background:${c}">
+   <span class="tick"><svg><use href="#i-check"/></svg></span><em>${n}</em></button>`).join('');
 
 document.querySelectorAll('.col').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('.col').forEach(x=>x.classList.remove('on'));
- b.classList.add('on');color=b.dataset.c;$('#e-col').classList.remove('on');$('#n2').disabled=false});
+ b.classList.add('on');color=b.dataset.c;$('#n2').disabled=false});
 
 document.querySelectorAll('.st').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('.st').forEach(x=>x.classList.remove('on'));
- b.classList.add('on');status=b.dataset.s;$('#e-st').classList.remove('on');$('#n3').disabled=false;
+ b.classList.add('on');status=b.dataset.s;$('#n3').disabled=false;
  /* « Perdu » ajoute une étape : l'indicateur doit le refléter tout de suite */
  showStep(step)});
 
@@ -400,7 +623,7 @@ $('#file').onchange=e=>{const f=e.target.files[0];if(!f)return;
   photo=resize(img,900,.75);
   thumb=resize(img,120,.5);
   $('#prev').src=photo;$('#shotbox').style.display='none';$('#prevbox').style.display='block';
-  $('#e-photo').classList.remove('on');$('#n1').disabled=false};
+  $('#n1').disabled=false};
   img.src=r.result};
  r.readAsDataURL(f)};
 
@@ -408,19 +631,20 @@ $('#retake').onclick=()=>{photo=thumb=null;$('#file').value='';
  $('#shotbox').style.display='block';$('#prevbox').style.display='none';$('#n1').disabled=true};
 
 function geo(){
- if(!navigator.geolocation){$('#geo').textContent='📍 GPS indisponible';return}
+ if(!navigator.geolocation){$('#geo-t').textContent='GPS indisponible';return}
  navigator.geolocation.getCurrentPosition(p=>{
   pos={lat:p.coords.latitude,lng:p.coords.longitude};
-  $('#geo').textContent='📍 Position trouvée (±'+Math.round(p.coords.accuracy)+' m)';
-  $('#geo').classList.add('ok');updateBadge()},
- ()=>{$('#geo').textContent='📍 Position refusée — autorise la localisation'},
+  $('#geo-t').textContent='Position trouvée (±'+Math.round(p.coords.accuracy)+' m)';
+  $('#geo').classList.add('ok');updateBadge();
+  if(view==='map'&&map)drawMap()},
+ ()=>{$('#geo-t').textContent='Position refusée — autorise la localisation'},
  {enableHighAccuracy:true,timeout:10000});
 }
 geo();
 
 $('#go').onclick=()=>{
  if(!pos){toast('Position requise — autorise le GPS');geo();return}
- const near=cats.filter(c=>c.color===color&&dist(pos.lat,pos.lng,c.lat,c.lng)<300)
+ const near=cats.filter(c=>c.color===color&&c.status!=='Retrouvé'&&dist(pos.lat,pos.lng,c.lat,c.lng)<300)
    .sort((a,b)=>dist(pos.lat,pos.lng,a.lat,a.lng)-dist(pos.lat,pos.lng,b.lat,b.lng));
  if(near.length){pending=near[0];
   $('#m-col').textContent=color.toLowerCase();
@@ -448,18 +672,18 @@ async function add(){
  }catch{toast("Envoi impossible — vérifie ta connexion")}
 }
 
-$('#m-yes').onclick=()=>{
+$('#m-yes').onclick=async()=>{
  const upd={seen:increment(1),last:new Date().toISOString(),lat:pos.lat,lng:pos.lng};
  if(status==='Perdu')upd.status='Perdu';
- updateDoc(doc(db,'cats',pending.id),upd);
- $('#sh-match').classList.remove('on');reset();celebrate('Observation ajoutée')};
+ try{await updateDoc(doc(db,'cats',pending.id),upd);
+  $('#sh-match').classList.remove('on');reset();celebrate('Observation ajoutée');
+ }catch{toast('Impossible pour le moment')}};
 $('#m-no').onclick=()=>{$('#sh-match').classList.remove('on');add()};
 
 function reset(){photo=thumb=color=status=null;pending=null;
  $('#shotbox').style.display='block';$('#prevbox').style.display='none';$('#file').value='';
  $('#f-name').value='';$('#f-contact').value='';
  document.querySelectorAll('.col,.st').forEach(b=>b.classList.remove('on'));
- document.querySelectorAll('.err').forEach(e=>e.classList.remove('on'));
  $('#n1').disabled=true;$('#n2').disabled=true;$('#n3').disabled=true;
  showStep(1)}
 showStep(1);
@@ -470,28 +694,41 @@ document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>{
  b.classList.add('on');view=b.dataset.v;$('#v-'+view).classList.add('on');
  if(view==='map')drawMap();if(view==='list')drawList()});
 
+/* ---- carte ---- */
+const pinIcon=(k,size)=>L.divIcon({className:'pin',iconSize:[size,size],iconAnchor:[size/2,size/2],
+ html:`<i class="${k.status==='Perdu'?'lost':k.status==='Retrouvé'?'found':''}"
+   style="background-image:url('${k.thumb||k.photo||''}')"></i>`});
+
 function drawMap(){
  if(!map){
-  map=L.map('map',{zoomControl:false}).setView(pos?[pos.lat,pos.lng]:[49.4,2.3],15);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  map=L.map('map',{zoomControl:false,attributionControl:true})
+    .setView(pos?[pos.lat,pos.lng]:[49.4,2.3],15);
+  /* OpenStreetMap : libre et sans clé d'API. Le rendu neutre vient du
+     filtre CSS sur .leaflet-tile-pane, pas d'un fournisseur payant. */
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
    {attribution:'© OpenStreetMap',maxZoom:19}).addTo(map);
-  L.control.zoom({position:'bottomright'}).addTo(map);
  }
  setTimeout(()=>map.invalidateSize(),80);
  if(layer)layer.remove();
  layer=L.layerGroup().addTo(map);
- if(pos)L.circleMarker([pos.lat,pos.lng],{radius:7,color:'#1a73e8',fillColor:'#1a73e8',fillOpacity:1,weight:2}).addTo(layer);
- cats.forEach(k=>{
-  const found=k.status==='Retrouvé';
-  const m=L.circleMarker([k.lat,k.lng],{radius:found?8:11,color:k.status==='Perdu'?'#d93025':'#fff',
-   weight:3,fillColor:COLORS[k.color]||'#999',fillOpacity:found?.45:1,opacity:found?.5:1,
-   className:k.status==='Perdu'?'m-lost':''}).addTo(layer);
-  m.on('click',()=>detail(k.id))});
- if(cats.length)map.fitBounds(L.latLngBounds(cats.map(k=>[k.lat,k.lng])).pad(.4),{maxZoom:16});
+ if(pos)L.marker([pos.lat,pos.lng],{icon:L.divIcon({className:'me',iconSize:[18,18],
+  iconAnchor:[9,9],html:'<i></i>'}),interactive:false}).addTo(layer);
+ const shown=cats.filter(k=>!onlyLost||k.status==='Perdu');
+ shown.forEach(k=>{
+  const size=k.status==='Retrouvé'?32:44;
+  L.marker([k.lat,k.lng],{icon:pinIcon(k,size)}).addTo(layer).on('click',()=>detail(k.id))});
+ if(shown.length)map.fitBounds(L.latLngBounds(shown.map(k=>[k.lat,k.lng])).pad(.35),{maxZoom:16});
 }
 
-/* le nom vient d'un autre utilisateur : on l'échappe avant tout innerHTML */
-const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+$('#f-all').onclick=()=>{onlyLost=false;$('#f-all').classList.add('on');
+ $('#f-lost').classList.remove('on');drawMap()};
+$('#f-lost').onclick=()=>{onlyLost=true;$('#f-lost').classList.add('on');
+ $('#f-all').classList.remove('on');drawMap()};
+$('#locate').onclick=()=>{
+ if(!pos){toast('Position requise — autorise le GPS');geo();return}
+ map&&map.flyTo([pos.lat,pos.lng],16,{duration:.6})};
+
+/* ---- liste ---- */
 const nearLost=()=>pos?cats.filter(k=>k.status==='Perdu'&&dist(pos.lat,pos.lng,k.lat,k.lng)<2000):[];
 
 function updateBadge(){
@@ -505,21 +742,27 @@ function drawList(){
  /* les chats perdus passent devant : c'est eux qui ont besoin d'aide */
  const rank=k=>k.status==='Perdu'?0:k.status==='Retrouvé'?2:1;
  const c=[...cats].sort((a,b)=>rank(a)-rank(b)||new Date(b.last)-new Date(a.last));
- if(!c.length){$('#list-pad').innerHTML='<div class="empty"><span class="ic">🐾</span>Aucun chat signalé.<br>Commence par en photographier un.</div>';return}
- const lost=c.filter(k=>k.status==='Perdu').length,alert=nearLost().length;
+ const about=`<div class="about"><p>Une carte des chats du quartier, tenue par ses habitants.
+   Tout ce qui est signalé est public. <a href="#" id="about-legal">Vie privée et données →</a></p></div>`;
+ if(!c.length){
+  $('#list-pad').innerHTML=`<div class="empty"><span class="ico"><svg><use href="#i-paw"/></svg></span>
+   <b>Aucun chat pour l'instant</b><span>Commence par en photographier un près de chez toi.</span></div>`+about;
+  $('#about-legal').onclick=e=>{e.preventDefault();$('#sh-legal').classList.add('on')};
+  return}
+ const lost=c.filter(k=>k.status==='Perdu').length,al=nearLost().length;
  $('#list-pad').innerHTML=
- `<div class="alert${alert?' on':''}"><b>🚨 ${alert} chat${alert>1?'s':''} perdu${alert>1?'s':''} près de toi</b>
-   <span>Ouvre sa fiche si tu l'aperçois — ça aide vraiment son maître.</span></div>
+ `<div class="alert${al?' on':''}"><svg><use href="#i-alert"/></svg>
+   <div><b>${al} chat${al>1?'s':''} perdu${al>1?'s':''} près de toi</b>
+   <span>Ouvre sa fiche si tu l'aperçois — ça aide vraiment son maître.</span></div></div>
   <div class="stat"><div><b>${c.length}</b><small>chats</small></div>
-  <div><b>${c.reduce((s,k)=>s+(k.seen||0),0)}</b><small>observations</small></div>
-  <div><b>${lost}</b><small>perdus</small></div></div>
+   <div><b>${c.reduce((s,k)=>s+(k.seen||0),0)}</b><small>observations</small></div>
+   <div><b>${lost}</b><small>perdus</small></div></div>
   <div class="list">${c.map(k=>`<div class="item${k.status==='Retrouvé'?' found':''}" data-id="${k.id}">
-   <div class="dot" style="background:${COLORS[k.color]||'#999'}${(k.thumb||k.photo)?`;background-image:url(${k.thumb||k.photo});background-size:cover;background-position:center`:''}"></div>
-   <div><b>${esc(k.name||k.color)}</b><small>${k.seen} obs. · ${pos?fmt(dist(pos.lat,pos.lng,k.lat,k.lng)):''}</small></div>
-   <span class="badge ${k.status==='Perdu'?'lost':k.status==='Retrouvé'?'ok':''}">${esc(k.status)}</span></div>`).join('')}</div>
-  <div class="about"><h3>À propos de CatMap</h3>
-   <p>Une carte des chats du quartier, tenue par ses habitants. Tout ce qui est signalé est public.</p>
-   <p><a href="#" id="about-legal" style="color:#ee5a6f;font-weight:700">Vie privée et données →</a></p></div>`;
+   <div class="dot" style="background:${COLORS[k.color]||'#999'}${(k.thumb||k.photo)?`;background-image:url(${k.thumb||k.photo})`:''}"></div>
+   <div class="txt"><b>${esc(k.name||k.color)}</b>
+    <small>${k.seen} obs.${pos?' · '+fmt(dist(pos.lat,pos.lng,k.lat,k.lng)):''}</small></div>
+   <span class="badge ${k.status==='Perdu'?'lost':k.status==='Retrouvé'?'ok':''}">${esc(k.status)}</span>
+   </div>`).join('')}</div>`+about;
  document.querySelectorAll('.item').forEach(i=>i.onclick=()=>detail(i.dataset.id));
  $('#about-legal').onclick=e=>{e.preventDefault();$('#sh-legal').classList.add('on')};
 }
@@ -533,7 +776,7 @@ function detail(id){
 
  /* contact saisi par un autre utilisateur : jamais injecté en HTML */
  const showContact=k.contact&&k.status==='Perdu';
- $('#d-contact').style.display=showContact?'block':'none';
+ $('#d-contact').style.display=showContact?'flex':'none';
  if(showContact){
   $('#d-contact-lbl').textContent=k.name?`Contacter le maître de ${k.name}`:'Contacter le maître';
   $('#d-contact-val').textContent=k.contact}
@@ -546,8 +789,8 @@ function detail(id){
 
  const act=$('#d-act');act.innerHTML='';
  if(k.status!=='Retrouvé'){
-  act.innerHTML=`<button class="seen">👀 Je l'ai vu ici</button>`+
-   (k.status==='Perdu'?`<button class="found">✅ Il est retrouvé</button>`:'');
+  act.innerHTML=`<button class="seen"><svg><use href="#i-eye"/></svg>Je l'ai vu ici</button>`+
+   (k.status==='Perdu'?`<button class="found"><svg><use href="#i-check"/></svg>Il est retrouvé</button>`:'');
   act.querySelector('.seen').onclick=()=>markSeen(id);
   const f=act.querySelector('.found');if(f)f.onclick=()=>markFound(id);
  }
