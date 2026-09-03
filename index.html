@@ -40,8 +40,8 @@ nav .ic{font-size:20px;line-height:1;transition:transform .2s}
 .wiz-bar .d.on{width:22px;border-radius:5px;background:#ee5a6f}
 .wiz-bar .d.done{background:#f3aab4}
 .wiz-track{flex:1;overflow:hidden;position:relative}
-.wiz-steps{display:flex;width:400%;height:100%;transition:transform .38s cubic-bezier(.22,1,.36,1)}
-.wiz-step{width:25%;height:100%;overflow-y:auto;padding:8px 18px calc(env(safe-area-inset-bottom) + 20px);-webkit-overflow-scrolling:touch}
+.wiz-steps{display:flex;width:500%;height:100%;transition:transform .38s cubic-bezier(.22,1,.36,1)}
+.wiz-step{width:20%;height:100%;overflow-y:auto;padding:8px 18px calc(env(safe-area-inset-bottom) + 20px);-webkit-overflow-scrolling:touch}
 .wiz-head{margin-bottom:18px}
 .wiz-n{font-size:12px;font-weight:700;color:#ee5a6f;text-transform:uppercase;letter-spacing:.5px}
 .wiz-head h2{font-size:22px;margin-top:4px;font-weight:800}
@@ -81,6 +81,28 @@ nav .ic{font-size:20px;line-height:1;transition:transform .2s}
 .recap img{width:74px;height:74px;border-radius:12px;object-fit:cover;flex-shrink:0;background:#eee}
 .recap-info{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
 .recap-info b{font-size:16px}
+
+.fld{margin-bottom:16px}
+.fld label{display:block;font-size:13px;font-weight:700;margin-bottom:6px}
+.fld input{width:100%;padding:15px;border:1px solid #e5e5e5;border-radius:14px;font-size:16px;font-family:inherit;background:#fff;color:#1a1a1a}
+.fld input:focus{outline:none;border-color:#ee5a6f}
+.fld .hint{font-size:12px;color:#8a8a8e;margin-top:6px;line-height:1.45}
+.warn{background:#fff8e6;border:1px solid #f5d78e;border-radius:12px;padding:11px 13px;font-size:12px;color:#7a5b00;line-height:1.45;margin-bottom:16px}
+
+.act{display:grid;gap:9px;margin-top:16px}
+.act button{padding:15px;border-radius:14px;border:1px solid #d1d1d6;background:#fff;font-size:14.5px;font-weight:700;font-family:inherit;color:#1a1a1a;transition:transform .15s}
+.act button:active{transform:scale(.97)}
+.act .seen{background:#1a73e8;color:#fff;border-color:#1a73e8}
+.act .found{background:#1a7f37;color:#fff;border-color:#1a7f37}
+.d-contact{background:#fff4f4;border:1px solid #f5c6c2;border-radius:12px;padding:12px 13px;margin-bottom:14px}
+.d-contact b{display:block;font-size:12px;color:#d93025;text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px}
+.d-contact span{font-size:15px;font-weight:600;word-break:break-word}
+
+.alert{margin:0 0 16px;background:linear-gradient(120deg,#d93025,#ff6b5c);color:#fff;border-radius:16px;padding:15px 16px;display:none;box-shadow:0 6px 18px rgba(217,48,37,.3)}
+.alert.on{display:block;animation:slidein .35s ease}
+@keyframes slidein{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.alert b{display:block;font-size:15px;margin-bottom:3px}
+.alert span{font-size:13px;opacity:.95}
 
 .err{color:#d93025;font-size:12px;margin-top:8px;display:none}
 .err.on{display:block}
@@ -129,6 +151,10 @@ nav .ic{font-size:20px;line-height:1;transition:transform .2s}
 .empty .ic{font-size:40px;display:block;margin-bottom:10px}
 .badge{font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;background:#f0f0f0;color:#6a6a6e}
 .badge.lost{background:#fce8e6;color:#d93025}
+.badge.ok{background:#e6f4ea;color:#1a7f37}
+.item.found .dot,.item.found b{opacity:.55}
+nav button{position:relative}
+.nbadge{position:absolute;top:5px;right:calc(50% - 24px);min-width:17px;height:17px;border-radius:9px;background:#d93025;color:#fff;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 5px;box-shadow:0 0 0 2px #fff}
 
 .leaflet-interactive.m-lost{animation:markerpulse 1.5s ease-in-out infinite}
 @keyframes markerpulse{0%,100%{stroke-opacity:1}50%{stroke-opacity:.35}}
@@ -140,13 +166,11 @@ nav .ic{font-size:20px;line-height:1;transition:transform .2s}
 <main>
 
 <section id="v-add" class="view on"><div class="wiz">
-  <div class="wiz-bar">
-    <span class="d" data-d="1"></span><span class="d" data-d="2"></span><span class="d" data-d="3"></span><span class="d" data-d="4"></span>
-  </div>
+  <div class="wiz-bar" id="wiz-bar"></div>
   <div class="wiz-track"><div class="wiz-steps" id="wiz-steps">
 
     <div class="wiz-step" data-step="1">
-      <div class="wiz-head"><span class="wiz-n">Étape 1 sur 4</span><h2>Une photo du chat</h2><p>Ça aide tes voisins à le reconnaître.</p></div>
+      <div class="wiz-head"><span class="wiz-n" data-n></span><h2>Une photo du chat</h2><p>Ça aide tes voisins à le reconnaître.</p></div>
       <label class="shot" id="shotbox"><span class="ic">📷</span><span class="t">Prendre une photo du chat</span>
         <input type="file" id="file" accept="image/*" capture="environment"></label>
       <div class="prevbox" id="prevbox"><img id="prev" alt=""><button class="retake" id="retake">🔄 Reprendre une photo</button></div>
@@ -155,14 +179,14 @@ nav .ic{font-size:20px;line-height:1;transition:transform .2s}
     </div>
 
     <div class="wiz-step" data-step="2">
-      <div class="wiz-head"><span class="wiz-n">Étape 2 sur 4</span><h2>De quelle couleur ?</h2><p>Choisis celle qui ressemble le plus.</p></div>
+      <div class="wiz-head"><span class="wiz-n" data-n></span><h2>De quelle couleur ?</h2><p>Choisis celle qui ressemble le plus.</p></div>
       <div class="cols" id="cols"></div>
       <div class="err" id="e-col">Choisis une couleur pour continuer</div>
       <div class="wiz-nav"><button class="back" id="b2">← Retour</button><button class="go" id="n2" disabled>Suivant</button></div>
     </div>
 
     <div class="wiz-step" data-step="3">
-      <div class="wiz-head"><span class="wiz-n">Étape 3 sur 4</span><h2>Que fait-il ?</h2><p>Sa situation en ce moment.</p></div>
+      <div class="wiz-head"><span class="wiz-n" data-n></span><h2>Que fait-il ?</h2><p>Sa situation en ce moment.</p></div>
       <div class="sts">
         <button class="st" data-s="Errant"><span class="sic">🐈</span>Errant</button>
         <button class="st" data-s="Promenade"><span class="sic">🚶</span>Promenade</button>
@@ -173,10 +197,24 @@ nav .ic{font-size:20px;line-height:1;transition:transform .2s}
     </div>
 
     <div class="wiz-step" data-step="4">
-      <div class="wiz-head"><span class="wiz-n">Étape 4 sur 4</span><h2>C'est prêt !</h2><p>Vérifie et envoie.</p></div>
+      <div class="wiz-head"><span class="wiz-n" data-n></span><h2>Aide à le retrouver</h2><p>Pour que tes voisins puissent te prévenir.</p></div>
+      <div class="fld">
+        <label for="f-name">Son nom</label>
+        <input type="text" id="f-name" maxlength="40" placeholder="Minou" autocomplete="off">
+      </div>
+      <div class="fld">
+        <label for="f-contact">Comment te joindre</label>
+        <input type="text" id="f-contact" maxlength="100" placeholder="06 12 34 56 78" autocomplete="off">
+      </div>
+      <div class="warn">⚠️ Ce que tu écris ici sera visible par tous les utilisateurs de l'app. N'indique que ce que tu acceptes de rendre public.</div>
+      <div class="wiz-nav"><button class="back" id="b4">← Retour</button><button class="go" id="n4">Suivant</button></div>
+    </div>
+
+    <div class="wiz-step" data-step="5">
+      <div class="wiz-head"><span class="wiz-n" data-n></span><h2>C'est prêt !</h2><p>Vérifie et envoie.</p></div>
       <div class="recap"><img id="r-img" alt=""><div class="recap-info"><b id="r-col"></b><span class="badge" id="r-st"></span></div></div>
       <div class="geo" id="geo">📍 Localisation en cours…</div>
-      <div class="wiz-nav"><button class="back" id="b4">← Retour</button><button class="go" id="go">Signaler ce chat</button></div>
+      <div class="wiz-nav"><button class="back" id="b5">← Retour</button><button class="go" id="go">Signaler ce chat</button></div>
     </div>
 
   </div></div>
@@ -208,8 +246,10 @@ nav .ic{font-size:20px;line-height:1;transition:transform .2s}
 <div class="sheet" id="sh-det"><div class="card">
   <h2 id="d-title"></h2>
   <img id="d-img" alt="">
+  <div class="d-contact" id="d-contact" style="display:none"><b id="d-contact-lbl">Contact</b><span id="d-contact-val"></span></div>
   <div id="d-rows"></div>
-  <button class="go" id="d-close" style="margin-top:18px">Fermer</button>
+  <div class="act" id="d-act"></div>
+  <button class="go" id="d-close" style="margin-top:14px;background:#fff;color:#6a6a6e;border:1px solid #e5e5e5;box-shadow:none">Fermer</button>
 </div></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -261,23 +301,28 @@ function dist(a,b,c,d){const R=6371e3,p=Math.PI/180,x=(c-a)*p,y=(d-b)*p;
  return Math.round(2*R*Math.atan2(Math.sqrt(h),Math.sqrt(1-h)))}
 const fmt=m=>m<1000?m+' m':(m/1000).toFixed(1)+' km';
 
-/* wizard navigation */
+/* Le parcours gagne une étape quand le chat est perdu : on demande alors
+   son nom et un moyen de joindre son maître. Sinon on saute directement au récap. */
+const seq=()=>status==='Perdu'?[1,2,3,4,5]:[1,2,3,5];
+
 function showStep(n){
  step=n;
- $('#wiz-steps').style.transform=`translateX(-${(n-1)*25}%)`;
- document.querySelectorAll('.wiz-bar .d').forEach(d=>{
-  const i=+d.dataset.d;
-  d.classList.toggle('on',i===n);d.classList.toggle('done',i<n)});
+ const s=seq(),i=s.indexOf(n);
+ $('#wiz-steps').style.transform=`translateX(-${(n-1)*20}%)`;
+ $('#wiz-bar').innerHTML=s.map((_,j)=>`<span class="d${j===i?' on':j<i?' done':''}"></span>`).join('');
+ document.querySelectorAll('.wiz-step').forEach(el=>{
+  const k=s.indexOf(+el.dataset.step),lbl=el.querySelector('[data-n]');
+  if(lbl)lbl.textContent=k<0?'':`Étape ${k+1} sur ${s.length}`});
+ if(n===5){
+  $('#r-img').src=photo;
+  $('#r-col').textContent=($('#f-name').value.trim()&&status==='Perdu')?$('#f-name').value.trim():color;
+  $('#r-st').textContent=status;$('#r-st').className='badge'+(status==='Perdu'?' lost':'')}
 }
-$('#n1').onclick=()=>showStep(2);
-$('#b2').onclick=()=>showStep(1);
-$('#n2').onclick=()=>showStep(3);
-$('#b3').onclick=()=>showStep(2);
-$('#n3').onclick=()=>{
- $('#r-img').src=photo;$('#r-col').textContent=color;
- $('#r-st').textContent=status;$('#r-st').className='badge'+(status==='Perdu'?' lost':'');
- showStep(4)};
-$('#b4').onclick=()=>showStep(3);
+const next=()=>{const s=seq();showStep(s[Math.min(s.indexOf(step)+1,s.length-1)])};
+const back=()=>{const s=seq();showStep(s[Math.max(s.indexOf(step)-1,0)])};
+
+['n1','n2','n3','n4'].forEach(id=>$('#'+id).onclick=next);
+['b2','b3','b4','b5'].forEach(id=>$('#'+id).onclick=back);
 
 $('#cols').innerHTML=Object.entries(COLORS).map(([n,c])=>
  `<button class="col" data-c="${n}" style="background:${c}${n==='Blanc'?';color:#333;text-shadow:none':''}">${n}</button>`).join('');
@@ -288,7 +333,9 @@ document.querySelectorAll('.col').forEach(b=>b.onclick=()=>{
 
 document.querySelectorAll('.st').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('.st').forEach(x=>x.classList.remove('on'));
- b.classList.add('on');status=b.dataset.s;$('#e-st').classList.remove('on');$('#n3').disabled=false});
+ b.classList.add('on');status=b.dataset.s;$('#e-st').classList.remove('on');$('#n3').disabled=false;
+ /* « Perdu » ajoute une étape : l'indicateur doit le refléter tout de suite */
+ showStep(step)});
 
 function resize(img,max,quality){
  const cv=document.createElement('canvas');
@@ -316,7 +363,7 @@ function geo(){
  navigator.geolocation.getCurrentPosition(p=>{
   pos={lat:p.coords.latitude,lng:p.coords.longitude};
   $('#geo').textContent='📍 Position trouvée (±'+Math.round(p.coords.accuracy)+' m)';
-  $('#geo').classList.add('ok')},
+  $('#geo').classList.add('ok');updateBadge()},
  ()=>{$('#geo').textContent='📍 Position refusée — autorise la localisation'},
  {enableHighAccuracy:true,timeout:10000});
 }
@@ -335,13 +382,20 @@ $('#go').onclick=()=>{
  else add()};
 
 async function add(){
- const ref=doc(catsCol);
+ const ref=doc(catsCol),now=new Date().toISOString();
+ const data={color,status,thumb,lat:pos.lat,lng:pos.lng,first:now,last:now,seen:1};
+ if(status==='Perdu'){
+  const n=$('#f-name').value.trim(),c=$('#f-contact').value.trim();
+  if(n)data.name=n;
+  if(c)data.contact=c;
+ }
+ /* le message se calcule avant reset(), qui remet status à null */
+ const msg=status==='Perdu'?'Alerte lancée aux voisins':'Chat ajouté à la carte';
  try{
   /* la photo d'abord : quand la fiche apparaît, son image est déjà en place */
   await setDoc(doc(db,'photos',ref.id),{data:photo});
-  await setDoc(ref,{color,status,thumb,lat:pos.lat,lng:pos.lng,
-   first:new Date().toISOString(),last:new Date().toISOString(),seen:1});
-  reset();celebrate('Chat ajouté à la carte');
+  await setDoc(ref,data);
+  reset();celebrate(msg);
  }catch{toast("Envoi impossible — vérifie ta connexion")}
 }
 
@@ -354,6 +408,7 @@ $('#m-no').onclick=()=>{$('#sh-match').classList.remove('on');add()};
 
 function reset(){photo=thumb=color=status=null;pending=null;
  $('#shotbox').style.display='block';$('#prevbox').style.display='none';$('#file').value='';
+ $('#f-name').value='';$('#f-contact').value='';
  document.querySelectorAll('.col,.st').forEach(b=>b.classList.remove('on'));
  document.querySelectorAll('.err').forEach(e=>e.classList.remove('on'));
  $('#n1').disabled=true;$('#n2').disabled=true;$('#n3').disabled=true;
@@ -378,46 +433,95 @@ function drawMap(){
  layer=L.layerGroup().addTo(map);
  if(pos)L.circleMarker([pos.lat,pos.lng],{radius:7,color:'#1a73e8',fillColor:'#1a73e8',fillOpacity:1,weight:2}).addTo(layer);
  cats.forEach(k=>{
-  const m=L.circleMarker([k.lat,k.lng],{radius:11,color:k.status==='Perdu'?'#d93025':'#fff',
-   weight:3,fillColor:COLORS[k.color]||'#999',fillOpacity:1,
+  const found=k.status==='Retrouvé';
+  const m=L.circleMarker([k.lat,k.lng],{radius:found?8:11,color:k.status==='Perdu'?'#d93025':'#fff',
+   weight:3,fillColor:COLORS[k.color]||'#999',fillOpacity:found?.45:1,opacity:found?.5:1,
    className:k.status==='Perdu'?'m-lost':''}).addTo(layer);
   m.on('click',()=>detail(k.id))});
  if(cats.length)map.fitBounds(L.latLngBounds(cats.map(k=>[k.lat,k.lng])).pad(.4),{maxZoom:16});
 }
 
+/* le nom vient d'un autre utilisateur : on l'échappe avant tout innerHTML */
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const nearLost=()=>pos?cats.filter(k=>k.status==='Perdu'&&dist(pos.lat,pos.lng,k.lat,k.lng)<2000):[];
+
+function updateBadge(){
+ const btn=document.querySelector('nav button[data-v="list"]');
+ const old=btn.querySelector('.nbadge');if(old)old.remove();
+ const n=nearLost().length;
+ if(n){const b=document.createElement('span');b.className='nbadge';b.textContent=n;btn.appendChild(b)}
+}
+
 function drawList(){
- const c=[...cats].sort((a,b)=>new Date(b.last)-new Date(a.last));
+ /* les chats perdus passent devant : c'est eux qui ont besoin d'aide */
+ const rank=k=>k.status==='Perdu'?0:k.status==='Retrouvé'?2:1;
+ const c=[...cats].sort((a,b)=>rank(a)-rank(b)||new Date(b.last)-new Date(a.last));
  if(!c.length){$('#list-pad').innerHTML='<div class="empty"><span class="ic">🐾</span>Aucun chat signalé.<br>Commence par en photographier un.</div>';return}
- const lost=c.filter(k=>k.status==='Perdu').length;
+ const lost=c.filter(k=>k.status==='Perdu').length,alert=nearLost().length;
  $('#list-pad').innerHTML=
- `<div class="stat"><div><b>${c.length}</b><small>chats</small></div>
-  <div><b>${c.reduce((s,k)=>s+k.seen,0)}</b><small>observations</small></div>
+ `<div class="alert${alert?' on':''}"><b>🚨 ${alert} chat${alert>1?'s':''} perdu${alert>1?'s':''} près de toi</b>
+   <span>Ouvre sa fiche si tu l'aperçois — ça aide vraiment son maître.</span></div>
+  <div class="stat"><div><b>${c.length}</b><small>chats</small></div>
+  <div><b>${c.reduce((s,k)=>s+(k.seen||0),0)}</b><small>observations</small></div>
   <div><b>${lost}</b><small>perdus</small></div></div>
-  <div class="list">${c.map(k=>`<div class="item" data-id="${k.id}">
+  <div class="list">${c.map(k=>`<div class="item${k.status==='Retrouvé'?' found':''}" data-id="${k.id}">
    <div class="dot" style="background:${COLORS[k.color]||'#999'}${(k.thumb||k.photo)?`;background-image:url(${k.thumb||k.photo});background-size:cover;background-position:center`:''}"></div>
-   <div><b>${k.color}</b><small>${k.seen} obs. · ${pos?fmt(dist(pos.lat,pos.lng,k.lat,k.lng)):''}</small></div>
-   <span class="badge ${k.status==='Perdu'?'lost':''}">${k.status}</span></div>`).join('')}</div>`;
+   <div><b>${esc(k.name||k.color)}</b><small>${k.seen} obs. · ${pos?fmt(dist(pos.lat,pos.lng,k.lat,k.lng)):''}</small></div>
+   <span class="badge ${k.status==='Perdu'?'lost':k.status==='Retrouvé'?'ok':''}">${esc(k.status)}</span></div>`).join('')}</div>`;
  document.querySelectorAll('.item').forEach(i=>i.onclick=()=>detail(i.dataset.id));
 }
 
 function detail(id){
  const k=cats.find(x=>x.id===id);if(!k)return;
- $('#d-title').textContent=k.color+' · '+k.status;
+ $('#d-title').textContent=(k.name?k.name+' · ':'')+k.color+' · '+k.status;
  /* la miniature s'affiche tout de suite, la vraie photo la remplace dès son arrivée */
  $('#d-img').src=k.thumb||k.photo||'';
  loadPhoto(id).then(p=>{if(p)$('#d-img').src=p});
+
+ /* contact saisi par un autre utilisateur : jamais injecté en HTML */
+ const showContact=k.contact&&k.status==='Perdu';
+ $('#d-contact').style.display=showContact?'block':'none';
+ if(showContact){
+  $('#d-contact-lbl').textContent=k.name?`Contacter le maître de ${k.name}`:'Contacter le maître';
+  $('#d-contact-val').textContent=k.contact}
+
  $('#d-rows').innerHTML=
  `<div class="row"><span>Observations</span><span>${k.seen}</span></div>
   <div class="row"><span>Première fois</span><span>${new Date(k.first).toLocaleDateString('fr-FR')}</span></div>
   <div class="row"><span>Dernière fois</span><span>${new Date(k.last).toLocaleDateString('fr-FR')}</span></div>
   ${pos?`<div class="row"><span>Distance</span><span>${fmt(dist(pos.lat,pos.lng,k.lat,k.lng))}</span></div>`:''}`;
+
+ const act=$('#d-act');act.innerHTML='';
+ if(k.status!=='Retrouvé'){
+  act.innerHTML=`<button class="seen">👀 Je l'ai vu ici</button>`+
+   (k.status==='Perdu'?`<button class="found">✅ Il est retrouvé</button>`:'');
+  act.querySelector('.seen').onclick=()=>markSeen(id);
+  const f=act.querySelector('.found');if(f)f.onclick=()=>markFound(id);
+ }
  $('#sh-det').classList.add('on')}
+
+async function markSeen(id){
+ if(!pos){toast('Position requise — autorise le GPS');geo();return}
+ try{
+  await updateDoc(doc(db,'cats',id),
+   {seen:increment(1),last:new Date().toISOString(),lat:pos.lat,lng:pos.lng});
+  $('#sh-det').classList.remove('on');celebrate('Merci — observation ajoutée');
+ }catch{toast('Impossible pour le moment')}
+}
+
+async function markFound(id){
+ try{
+  await updateDoc(doc(db,'cats',id),{status:'Retrouvé',last:new Date().toISOString()});
+  $('#sh-det').classList.remove('on');celebrate('Génial — chat retrouvé !');
+ }catch{toast('Impossible pour le moment')}
+}
 
 $('#d-close').onclick=()=>$('#sh-det').classList.remove('on');
 document.querySelectorAll('.sheet').forEach(s=>s.onclick=e=>{if(e.target===s)s.classList.remove('on')});
 
 onSnapshot(catsCol,snap=>{
  cats=snap.docs.map(d=>({id:d.id,...d.data()}));
+ updateBadge();
  if(view==='map'&&map)drawMap();
  if(view==='list')drawList();
 },()=>toast('Connexion au serveur impossible — mode hors ligne'));
