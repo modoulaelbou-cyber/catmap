@@ -30,40 +30,75 @@ La carte affiche un marqueur circulaire par chat, rempli de sa couleur, avec un 
 
 ## Modèle de données
 
-Un chat, tel que stocké aujourd'hui dans `localStorage` sous la clé `catmap.v1` :
+Projet Firebase `catmap-9b132`, Firestore en région `eur3`, plan Spark (gratuit).
+
+Collection `cats` — fiche légère, chargée entièrement à chaque ouverture :
 
 ```js
 {
-  id: 1735820400000,      // Date.now()
   color: 'Roux',          // Gris | Roux | Noir | Blanc | Tigré | Bicolore
-  status: 'Errant',       // Errant | Promenade | Perdu
-  photo: 'data:image/jpeg;base64,...',
+  status: 'Errant',       // Errant | Promenade | Perdu | Retrouvé
+  thumb: 'data:image/jpeg;base64,...',  // miniature 120px, ~1 Ko
   lat: 49.1917,
   lng: 2.4083,
   first: '2026-09-02T18:00:00.000Z',
   last:  '2026-09-02T18:00:00.000Z',
-  seen: 1                 // nombre d'observations
+  seen: 1,                // nombre d'observations
+  name: 'Minou',          // optionnel, chats perdus seulement
+  contact: '06 12 34 56 78'  // optionnel, chats perdus seulement — PUBLIC
 }
 ```
 
-## Limite bloquante
+Collection `photos` — un document par chat, même id que la fiche, chargé
+seulement à l'ouverture d'une fiche : `{ data: 'data:image/jpeg;base64,...' }`
+(photo 900px, ~250 Ko).
 
-Les données vivent dans le `localStorage` du téléphone. Deux utilisateurs ne voient pas les chats l'un de l'autre, ce qui vide l'app de son intérêt : sans partage, personne ne peut aider à retrouver un chat perdu.
+Cette séparation est le point important : la fiche doit rester légère parce que
+l'app télécharge toutes les fiches à chaque ouverture. Avant la séparation, une
+fiche pesait 244 Ko contre 1 Ko après. Ne jamais remettre la photo pleine taille
+dans `cats`.
 
-C'est le chantier prioritaire. Migration vers Firebase Firestore, en conservant la même forme d'objet pour limiter les changements dans le code. Prévoir un mode hors ligne cohérent : la persistance locale de Firestore couvre le cas.
+Les fiches créées avant la séparation portent encore un champ `photo` en ligne
+et pas de `thumb` ; le code lit `k.thumb || k.photo` partout et `loadPhoto()`
+retombe sur ce champ. Ne pas retirer ces reprises tant que d'anciennes fiches
+existent en base.
 
-Les photos restent stockées en base64 directement dans le document Firestore (comme dans localStorage aujourd'hui), et non dans Firebase Storage : Storage exige le plan payant Blaze (carte bancaire), alors que Firestore reste gratuit sur le plan Spark. Une photo compressée (JPEG ~900px, qualité 0.75) tient largement sous la limite de 1 Mo par document Firestore. Décision prise le 2026-09-02, à revoir seulement si les photos deviennent plus lourdes.
+`name` et `contact` sont saisis par les utilisateurs : toujours les échapper
+(`esc()`) avant tout `innerHTML`, ou passer par `textContent`.
+
+Les règles de sécurité Firestore valident la forme des documents à l'écriture
+(champs autorisés, types, tailles, statuts). Toute nouvelle propriété doit y
+être ajoutée, sinon l'écriture est refusée en silence.
+
+## Décisions prises
+
+**Photos dans Firestore, pas dans Firebase Storage** (2026-09-02). Storage exige
+le plan payant Blaze avec carte bancaire ; Firestore reste gratuit sur Spark.
+Une photo compressée tient largement sous la limite de 1 Mo par document. À
+revoir seulement si les photos deviennent nettement plus lourdes.
+
+**Pas de comptes utilisateurs pour l'instant.** L'app ne demande ni e-mail ni mot
+de passe, ce qui supprime toute friction à l'entrée. En contrepartie personne ne
+peut modifier ou supprimer sa propre fiche, et il n'y a aucune modération. C'est
+le prochain arbitrage à faire si l'usage décolle (Firebase Auth anonyme donnerait
+une identité stable sans friction).
+
+**Pas d'IA de reconnaissance de couleur ou de race.** La sélection manuelle suffit
+et produit de meilleures données au départ.
 
 ## Suite envisagée
 
-Une fois les données partagées, dans cet ordre :
-
-1. Comptes utilisateurs (Firebase Auth, connexion anonyme ou par e-mail)
-2. Notification quand un chat est signalé perdu à proximité — c'est la fonctionnalité qui justifie l'app
+1. Comptes anonymes (Firebase Auth) — permettrait de modifier et supprimer ses
+   propres signalements, et de limiter le spam
+2. Vraies notifications push quand un chat est signalé perdu à proximité —
+   aujourd'hui l'alerte est seulement visible à l'ouverture de l'app (bannière +
+   pastille sur l'onglet Chats). Le push web est trop faible sur iOS, ce qui
+   pousse vers une version native
 3. Signalement des doublons et modération légère
-4. Version React Native, parce que les notifications push PWA sont trop faibles sur iOS
-
-L'IA de reconnaissance de couleur ou de race a été écartée volontairement : la sélection manuelle suffit et produit de meilleures données au départ.
+4. Ne charger que les chats proches — aujourd'hui l'app charge toutes les fiches.
+   Léger tant qu'elles pèsent 1 Ko, à revoir vers quelques milliers de chats
+5. App Store : la PWA ne peut pas y être publiée telle quelle, il faut l'emballer
+   (Capacitor) et un compte développeur Apple à 99 €/an
 
 ## Conventions
 
