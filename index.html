@@ -217,7 +217,7 @@ nav .ic{font-size:20px;line-height:1;transition:transform .2s}
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
 import {
  initializeFirestore, persistentLocalCache, persistentSingleTabManager,
- collection, doc, addDoc, updateDoc, onSnapshot, increment
+ collection, doc, setDoc, getDoc, updateDoc, onSnapshot, increment
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
 
 const firebaseConfig={
@@ -233,8 +233,23 @@ const db=initializeFirestore(app,{localCache:persistentLocalCache({tabManager:pe
 const catsCol=collection(db,'cats');
 
 const COLORS={Gris:'#9b9b9b',Roux:'#d2691e',Noir:'#2c2c2c',Blanc:'#e8e6e1',Tigré:'#8b6f47',Bicolore:'#6b6b6b'};
-let photo=null,color=null,status=null,pos=null,map=null,layer=null,pending=null,view='add',step=1;
+let photo=null,thumb=null,color=null,status=null,pos=null,map=null,layer=null,pending=null,view='add',step=1;
 let cats=[];
+const photoCache=new Map();
+
+/* La photo pleine taille vit dans une collection à part : la carte et la liste
+   ne chargent que des fiches légères, la photo n'arrive qu'à l'ouverture. */
+async function loadPhoto(id){
+ if(photoCache.has(id))return photoCache.get(id);
+ /* fiches d'avant la séparation : la photo est encore dans la fiche elle-même */
+ const old=cats.find(x=>x.id===id);
+ if(old&&old.photo){photoCache.set(id,old.photo);return old.photo}
+ try{
+  const snap=await getDoc(doc(db,'photos',id));
+  const data=snap.exists()?snap.data().data:null;
+  photoCache.set(id,data);return data;
+ }catch{return null}
+}
 
 const $=s=>document.querySelector(s);
 
@@ -275,20 +290,25 @@ document.querySelectorAll('.st').forEach(b=>b.onclick=()=>{
  document.querySelectorAll('.st').forEach(x=>x.classList.remove('on'));
  b.classList.add('on');status=b.dataset.s;$('#e-st').classList.remove('on');$('#n3').disabled=false});
 
+function resize(img,max,quality){
+ const cv=document.createElement('canvas');
+ let{width:w,height:h}=img;
+ if(w>h&&w>max){h=h*max/w;w=max}else if(h>max){w=w*max/h;h=max}
+ cv.width=w;cv.height=h;cv.getContext('2d').drawImage(img,0,0,w,h);
+ return cv.toDataURL('image/jpeg',quality);
+}
+
 $('#file').onchange=e=>{const f=e.target.files[0];if(!f)return;
  const img=new Image(),r=new FileReader();
  r.onload=()=>{img.onload=()=>{
-  const cv=document.createElement('canvas'),max=900;
-  let{width:w,height:h}=img;
-  if(w>h&&w>max){h=h*max/w;w=max}else if(h>max){w=w*max/h;h=max}
-  cv.width=w;cv.height=h;cv.getContext('2d').drawImage(img,0,0,w,h);
-  photo=cv.toDataURL('image/jpeg',.75);
+  photo=resize(img,900,.75);
+  thumb=resize(img,120,.5);
   $('#prev').src=photo;$('#shotbox').style.display='none';$('#prevbox').style.display='block';
   $('#e-photo').classList.remove('on');$('#n1').disabled=false};
   img.src=r.result};
  r.readAsDataURL(f)};
 
-$('#retake').onclick=()=>{photo=null;$('#file').value='';
+$('#retake').onclick=()=>{photo=thumb=null;$('#file').value='';
  $('#shotbox').style.display='block';$('#prevbox').style.display='none';$('#n1').disabled=true};
 
 function geo(){
@@ -309,13 +329,21 @@ $('#go').onclick=()=>{
  if(near.length){pending=near[0];
   $('#m-col').textContent=color.toLowerCase();
   $('#m-dist').textContent=fmt(dist(pos.lat,pos.lng,pending.lat,pending.lng));
-  $('#m-img').src=pending.photo;$('#sh-match').classList.add('on')}
+  $('#m-img').src=pending.thumb||pending.photo||'';
+  loadPhoto(pending.id).then(p=>{if(p&&pending)$('#m-img').src=p});
+  $('#sh-match').classList.add('on')}
  else add()};
 
-function add(){
- addDoc(catsCol,{color,status,photo,lat:pos.lat,lng:pos.lng,
-  first:new Date().toISOString(),last:new Date().toISOString(),seen:1});
- reset();celebrate('Chat ajouté à la carte')}
+async function add(){
+ const ref=doc(catsCol);
+ try{
+  /* la photo d'abord : quand la fiche apparaît, son image est déjà en place */
+  await setDoc(doc(db,'photos',ref.id),{data:photo});
+  await setDoc(ref,{color,status,thumb,lat:pos.lat,lng:pos.lng,
+   first:new Date().toISOString(),last:new Date().toISOString(),seen:1});
+  reset();celebrate('Chat ajouté à la carte');
+ }catch{toast("Envoi impossible — vérifie ta connexion")}
+}
 
 $('#m-yes').onclick=()=>{
  const upd={seen:increment(1),last:new Date().toISOString(),lat:pos.lat,lng:pos.lng};
@@ -324,7 +352,7 @@ $('#m-yes').onclick=()=>{
  $('#sh-match').classList.remove('on');reset();celebrate('Observation ajoutée')};
 $('#m-no').onclick=()=>{$('#sh-match').classList.remove('on');add()};
 
-function reset(){photo=color=status=null;pending=null;
+function reset(){photo=thumb=color=status=null;pending=null;
  $('#shotbox').style.display='block';$('#prevbox').style.display='none';$('#file').value='';
  document.querySelectorAll('.col,.st').forEach(b=>b.classList.remove('on'));
  document.querySelectorAll('.err').forEach(e=>e.classList.remove('on'));
@@ -366,7 +394,7 @@ function drawList(){
   <div><b>${c.reduce((s,k)=>s+k.seen,0)}</b><small>observations</small></div>
   <div><b>${lost}</b><small>perdus</small></div></div>
   <div class="list">${c.map(k=>`<div class="item" data-id="${k.id}">
-   <div class="dot" style="background:${COLORS[k.color]||'#999'}"></div>
+   <div class="dot" style="background:${COLORS[k.color]||'#999'}${(k.thumb||k.photo)?`;background-image:url(${k.thumb||k.photo});background-size:cover;background-position:center`:''}"></div>
    <div><b>${k.color}</b><small>${k.seen} obs. · ${pos?fmt(dist(pos.lat,pos.lng,k.lat,k.lng)):''}</small></div>
    <span class="badge ${k.status==='Perdu'?'lost':''}">${k.status}</span></div>`).join('')}</div>`;
  document.querySelectorAll('.item').forEach(i=>i.onclick=()=>detail(i.dataset.id));
@@ -375,7 +403,9 @@ function drawList(){
 function detail(id){
  const k=cats.find(x=>x.id===id);if(!k)return;
  $('#d-title').textContent=k.color+' · '+k.status;
- $('#d-img').src=k.photo;
+ /* la miniature s'affiche tout de suite, la vraie photo la remplace dès son arrivée */
+ $('#d-img').src=k.thumb||k.photo||'';
+ loadPhoto(id).then(p=>{if(p)$('#d-img').src=p});
  $('#d-rows').innerHTML=
  `<div class="row"><span>Observations</span><span>${k.seen}</span></div>
   <div class="row"><span>Première fois</span><span>${new Date(k.first).toLocaleDateString('fr-FR')}</span></div>
