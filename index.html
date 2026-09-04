@@ -100,28 +100,18 @@ nav button:active{transform:scale(.94)}
  background:color-mix(in srgb,var(--surface) 82%,transparent)!important;
  color:var(--ink-3)!important;border-radius:6px 0 0 0;padding:2px 5px!important}
 .leaflet-control-attribution a{color:var(--ink-2)!important}
-.pin{background:none!important;border:0!important}
-.pin i{display:block;width:100%;height:100%;border-radius:50%;background-size:cover;
- background-position:center;background-color:var(--surface-2);
- border:3px solid var(--surface);box-shadow:0 3px 12px rgba(0,0,0,.3)}
-.pin i.lost{border-color:var(--danger);
- box-shadow:0 0 0 0 color-mix(in srgb,var(--danger) 55%,transparent),0 3px 12px rgba(0,0,0,.3);
- animation:ping 1.9s ease-out infinite}
-@keyframes ping{
- 0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--danger) 55%,transparent),0 3px 12px rgba(0,0,0,.3)}
- 70%{box-shadow:0 0 0 14px transparent,0 3px 12px rgba(0,0,0,.3)}
- 100%{box-shadow:0 0 0 0 transparent,0 3px 12px rgba(0,0,0,.3)}}
-.pin i.found{opacity:.45}
+
+.catpin{background:none!important;border:0!important}
+.catpin svg{width:100%;height:100%;filter:drop-shadow(0 2px 5px rgba(0,0,0,.4))}
+.catpin.lost svg{animation:catpulse 1.9s ease-in-out infinite}
+@keyframes catpulse{
+ 0%,100%{filter:drop-shadow(0 2px 5px rgba(0,0,0,.4)) drop-shadow(0 0 0 rgba(217,45,32,.85))}
+ 55%{filter:drop-shadow(0 2px 5px rgba(0,0,0,.4)) drop-shadow(0 0 10px rgba(217,45,32,1))}}
+.catpin.found svg{opacity:.42}
+.placepin{background:none!important;border:0!important}
+.placepin svg{width:100%;height:100%;filter:drop-shadow(0 2px 5px rgba(0,0,0,.4))}
 .me i{display:block;width:100%;height:100%;border-radius:50%;background:#2f7cf6;
  border:3px solid #fff;box-shadow:0 0 0 7px rgba(47,124,246,.16),0 2px 8px rgba(0,0,0,.35)}
-.plc{background:none!important;border:0!important}
-.plc i{display:flex;align-items:center;justify-content:center;width:100%;height:100%;
- border-radius:11px;border:2.5px solid var(--surface);box-shadow:0 2px 9px rgba(0,0,0,.3);color:#fff}
-.plc i svg{width:17px;height:17px;stroke-width:2}
-.plc i.Gamelle{background:#b7791f}
-.plc i.Eau{background:#0a6fb5}
-.plc i.Abri{background:#15803d}
-.plc i.Danger{background:#d92d20}
 
 .map-ui{position:absolute;z-index:500;left:14px;right:14px;top:14px;display:flex;gap:7px;
  pointer-events:none;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
@@ -159,6 +149,8 @@ nav button:active{transform:scale(.94)}
 .ghost{width:100%;padding:15px;border:1px solid var(--line);background:var(--surface);
  border-radius:var(--r);font-size:14.5px;font-weight:650;color:var(--ink-2);transition:transform .14s}
 .ghost:active{transform:scale(.975)}
+.danger-btn{width:100%;padding:14px;border:1px solid var(--line);background:none;
+ border-radius:var(--r);font-size:13.5px;font-weight:650;color:var(--ink-3);margin-top:9px}
 
 /* ---- parcours ---- */
 .wiz{display:flex;flex-direction:column;height:100%}
@@ -171,29 +163,38 @@ nav button:active{transform:scale(.94)}
 .wiz-bar .d.done,.wiz-bar .d.on{background:var(--brand)}
 .wiz-bar .d.done{opacity:.4}
 .wiz-track{flex:1;overflow:hidden;position:relative}
-.wiz-steps{display:flex;width:500%;height:100%;transition:transform .4s cubic-bezier(.32,.72,0,1)}
-.wiz-step{width:20%;height:100%;overflow-y:auto;
+.wiz-steps{display:flex;width:600%;height:100%;transition:transform .4s cubic-bezier(.32,.72,0,1)}
+.wiz-step{width:16.6667%;height:100%;overflow-y:auto;
  padding:2px 20px calc(env(safe-area-inset-bottom) + 20px);-webkit-overflow-scrolling:touch}
-.wiz-head{margin-bottom:22px}
+.wiz-head{margin-bottom:20px}
 .wiz-n{font-size:11.5px;font-weight:700;color:var(--ink-3)}
 .wiz-head h2{font-size:27px;line-height:1.12;margin-top:5px;font-weight:760;letter-spacing:-.035em}
 .wiz-head p{font-size:14.5px;color:var(--ink-2);margin-top:7px;line-height:1.45}
 .wiz-nav{display:flex;gap:10px;margin-top:22px}
 .wiz-nav .go{margin-top:0}
 
-.shot{display:block;border:1.5px dashed var(--line);border-radius:var(--r-lg);
- padding:52px 20px;text-align:center;background:var(--surface);transition:transform .14s}
-.shot:active{transform:scale(.985)}
-.shot .ico{width:46px;height:46px;margin:0 auto 12px;border-radius:15px;
- background:var(--brand-soft);color:var(--brand);display:flex;align-items:center;justify-content:center}
-.shot .ico svg{width:24px;height:24px}
-.shot b{display:block;font-size:15.5px;font-weight:680}
-.shot span{display:block;font-size:13px;color:var(--ink-3);margin-top:3px}
-.shot input{display:none}
-.prevbox{display:none}
-#prev{width:100%;border-radius:var(--r-lg);max-height:330px;object-fit:cover;display:block;
- box-shadow:var(--shadow)}
-.retake{margin-top:10px}
+/* ---- photos ---- */
+.tips{display:grid;gap:8px;margin-bottom:14px}
+.tip{display:flex;gap:10px;align-items:flex-start;background:var(--surface-2);border-radius:13px;
+ padding:11px 13px;font-size:12.5px;color:var(--ink-2);line-height:1.45}
+.tip svg{width:15px;height:15px;flex-shrink:0;margin-top:1px;stroke-width:2;color:var(--brand)}
+.shots{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.shotitem{position:relative;aspect-ratio:1;border-radius:var(--r);overflow:hidden;background:var(--surface-2)}
+.shotitem img{width:100%;height:100%;object-fit:cover;display:block}
+.shotitem .rm{position:absolute;top:7px;right:7px;width:26px;height:26px;border-radius:50%;border:0;
+ background:rgba(10,8,6,.62);color:#fff;display:flex;align-items:center;justify-content:center}
+.shotitem .rm svg{width:12px;height:12px;stroke-width:3}
+.shotitem .dk{position:absolute;left:0;right:0;bottom:0;background:rgba(217,45,32,.9);color:#fff;
+ font-size:10.5px;font-weight:700;text-align:center;padding:4px}
+.shotadd{aspect-ratio:1;border:1.5px dashed var(--line);border-radius:var(--r);background:var(--surface);
+ display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;
+ color:var(--ink-3);font-size:12.5px;font-weight:650;transition:transform .14s}
+.shotadd:active{transform:scale(.97)}
+.shotadd svg{width:22px;height:22px;stroke-width:2;color:var(--brand)}
+.darkwarn{display:none;gap:9px;background:var(--danger-soft);border-radius:13px;padding:12px;
+ font-size:12.5px;color:var(--danger);line-height:1.45;margin-top:12px}
+.darkwarn.on{display:flex}
+.darkwarn svg{width:16px;height:16px;flex-shrink:0;margin-top:1px;stroke-width:2}
 
 .cols{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}
 .col{aspect-ratio:1;border:0;border-radius:var(--r-lg);position:relative;overflow:hidden;
@@ -244,10 +245,21 @@ nav button:active{transform:scale(.94)}
  font-size:12.5px;color:var(--ink-2);line-height:1.5}
 .note svg{width:16px;height:16px;flex-shrink:0;margin-top:1px;stroke-width:1.9}
 
+/* ---- choix du lieu ---- */
+.pickmap{height:300px;border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--line);
+ position:relative}
+.pickmap .leaflet-container{background:var(--sunk)}
+.dragpin{background:none!important;border:0!important}
+.dragpin svg{width:100%;height:100%;filter:drop-shadow(0 3px 6px rgba(0,0,0,.45))}
+.pickhint{display:flex;gap:9px;align-items:flex-start;margin-top:12px;font-size:12.5px;
+ color:var(--ink-2);line-height:1.45}
+.pickhint svg{width:16px;height:16px;flex-shrink:0;margin-top:1px;stroke-width:2;color:var(--brand)}
+
 .recap{display:flex;gap:14px;align-items:center;background:var(--surface);
  border-radius:var(--r-lg);padding:14px;margin-bottom:14px;box-shadow:var(--shadow)}
 .recap img{width:78px;height:78px;border-radius:14px;object-fit:cover;flex-shrink:0;background:var(--surface-2)}
 .recap-i b{display:block;font-size:18px;font-weight:730;margin-bottom:6px}
+.recap-i small{display:block;font-size:12px;color:var(--ink-3);margin-top:5px}
 .geo{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);
  border-radius:var(--r);padding:15px;font-size:13.5px;color:var(--ink-2)}
 .geo svg{width:17px;height:17px;flex-shrink:0;stroke-width:1.9}
@@ -272,8 +284,8 @@ nav button:active{transform:scale(.94)}
 .item:active{background:var(--surface-2)}
 .dot{width:46px;height:46px;border-radius:14px;flex-shrink:0;background-size:cover;
  background-position:center;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08);
- display:flex;align-items:center;justify-content:center;color:#fff}
-.dot svg{width:21px;height:21px;stroke-width:2}
+ display:flex;align-items:center;justify-content:center;color:#fff;overflow:hidden}
+.dot svg{width:26px;height:26px}
 .item .txt{flex:1;min-width:0}
 .item b{display:block;font-size:15px;font-weight:680}
 .item small{display:block;font-size:12.5px;color:var(--ink-3);margin-top:1px}
@@ -335,8 +347,16 @@ nav button:active{transform:scale(.94)}
 .grab{width:38px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 16px}
 .card h2{font-size:21px;font-weight:740;letter-spacing:-.03em;margin-bottom:10px}
 .card>p,.card p.t{font-size:14px;color:var(--ink-2);line-height:1.55;margin-bottom:14px}
-.card img.hero{width:100%;height:230px;object-fit:cover;border-radius:var(--r-lg);
- margin-bottom:16px;background:var(--surface-2)}
+.gal{display:flex;gap:9px;overflow-x:auto;margin-bottom:16px;scrollbar-width:none;
+ scroll-snap-type:x mandatory}
+.gal::-webkit-scrollbar{display:none}
+.gal img{width:100%;flex-shrink:0;height:230px;object-fit:cover;border-radius:var(--r-lg);
+ background:var(--surface-2);scroll-snap-align:center}
+.gal.multi img{width:86%}
+.hidden-pic{height:150px;border-radius:var(--r-lg);background:var(--surface-2);display:flex;
+ flex-direction:column;align-items:center;justify-content:center;gap:8px;margin-bottom:16px;
+ color:var(--ink-3);font-size:13px;text-align:center;padding:20px}
+.hidden-pic svg{width:26px;height:26px;stroke-width:1.8}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .two button{padding:16px;border-radius:var(--r);border:1px solid var(--line);background:var(--surface);
  font-size:14.5px;font-weight:700;transition:transform .14s}
@@ -345,7 +365,7 @@ nav button:active{transform:scale(.94)}
 .row{display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--line);font-size:14px}
 .row:last-child{border:0}
 .row span:first-child{color:var(--ink-3)}
-.row span:last-child{font-weight:650}
+.row span:last-child{font-weight:650;text-align:right;max-width:62%}
 .act{display:grid;gap:9px;margin-top:16px}
 .act button{padding:16px;border-radius:var(--r);border:1px solid var(--line);background:var(--surface);
  font-size:15px;font-weight:700;transition:transform .14s;display:flex;align-items:center;
@@ -378,6 +398,18 @@ nav button:active{transform:scale(.94)}
 .pick .pi svg{width:21px;height:21px}
 .pick b{display:block;font-size:15.5px;font-weight:690}
 .pick small{display:block;font-size:12.5px;color:var(--ink-3);margin-top:1px}
+.reasons{display:grid;gap:9px}
+.reasons button{text-align:left;padding:15px;border:1px solid var(--line);border-radius:var(--r);
+ background:var(--surface);font-size:14.5px;font-weight:650;transition:transform .14s}
+.reasons button:active{transform:scale(.98)}
+.digest{display:grid;gap:10px;margin-bottom:6px}
+.dg{display:flex;align-items:center;gap:12px;padding:14px;border-radius:var(--r);
+ background:var(--surface-2)}
+.dg .di{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;
+ justify-content:center;flex-shrink:0;color:#fff}
+.dg .di svg{width:19px;height:19px}
+.dg b{display:block;font-size:15px;font-weight:700}
+.dg small{display:block;font-size:12.5px;color:var(--ink-2);margin-top:1px}
 
 .toast{position:fixed;left:20px;right:20px;bottom:calc(env(safe-area-inset-bottom) + 80px);
  background:var(--ink);color:var(--bg);padding:14px 17px;border-radius:var(--r);font-size:13.5px;
@@ -462,6 +494,12 @@ nav button:active{transform:scale(.94)}
  <circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4"/></symbol>
 <symbol id="i-star" viewBox="0 0 24 24" fill="currentColor">
  <path d="m12 2.9 2.9 5.9 6.5.9-4.7 4.6 1.1 6.5-5.8-3.1-5.8 3.1 1.1-6.5L2.6 9.7l6.5-.9z"/></symbol>
+<symbol id="i-flag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+ <path d="M5 21V4M5 4.5h11l-1.8 3.6L16 12H5"/></symbol>
+<symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+ <circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.2M12 19.8V22M22 12h-2.2M4.2 12H2M19.1 4.9l-1.6 1.6M6.5 17.5l-1.6 1.6M19.1 19.1l-1.6-1.6M6.5 6.5 4.9 4.9"/></symbol>
+<symbol id="i-crop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+ <path d="M6.5 2v15.5H22M2 6.5h15.5V22"/></symbol>
 </svg>
 
 <div class="app">
@@ -492,20 +530,24 @@ nav button:active{transform:scale(.94)}
   <div class="wiz-track"><div class="wiz-steps" id="wiz-steps">
 
     <div class="wiz-step" data-step="1">
-      <div class="wiz-head"><span class="wiz-n" data-n></span><h2>Une photo du chat</h2>
-        <p>C'est ce qui permet de le reconnaître d'une fois sur l'autre.</p></div>
-      <label class="shot" id="shotbox">
-        <span class="ico"><svg><use href="#i-cam"/></svg></span>
-        <b>Prendre une photo</b><span>Ou en choisir une existante</span>
-        <input type="file" id="file" accept="image/*" capture="environment"></label>
-      <div class="prevbox" id="prevbox"><img id="prev" alt="Photo du chat">
-        <button class="ghost retake" id="retake">Reprendre la photo</button></div>
+      <div class="wiz-head"><span class="wiz-n" data-n></span><h2>Photographie le chat</h2>
+        <p>C'est la photo qui donne sa vraie couleur sur la carte.</p></div>
+      <div class="tips">
+        <div class="tip"><svg><use href="#i-crop"/></svg>
+          <span>Cadre le chat en entier, d'assez près pour voir son pelage.</span></div>
+        <div class="tip"><svg><use href="#i-sun"/></svg>
+          <span>Évite le contre-jour : sans lumière, sa couleur est impossible à distinguer.</span></div>
+      </div>
+      <div class="shots" id="shots"></div>
+      <div class="darkwarn" id="darkwarn"><svg><use href="#i-alert"/></svg>
+        <span>Une photo est trop sombre pour distinguer sa couleur. Reprends-la si tu peux.</span></div>
+      <input type="file" id="file" accept="image/*" capture="environment" style="display:none">
       <button class="go" id="n1" disabled>Continuer</button>
     </div>
 
     <div class="wiz-step" data-step="2">
       <div class="wiz-head"><span class="wiz-n" data-n></span><h2>Sa couleur</h2>
-        <p>Choisis celle qui s'en rapproche le plus.</p></div>
+        <p>Celle qu'on voit sur ta photo. Elle donnera sa couleur sur la carte.</p></div>
       <div class="cols" id="cols"></div>
       <div class="wiz-nav"><button class="back" id="b2">Retour</button>
         <button class="go" id="n2" disabled>Continuer</button></div>
@@ -540,12 +582,24 @@ nav button:active{transform:scale(.94)}
     </div>
 
     <div class="wiz-step" data-step="5">
+      <div class="wiz-head"><span class="wiz-n" data-n></span><h2>Où l'as-tu vu ?</h2>
+        <p>Le GPS se trompe souvent de quelques mètres. Ajuste l'épingle.</p></div>
+      <div class="pickmap" id="pickmap-cat"></div>
+      <div class="pickhint"><svg><use href="#i-pin"/></svg>
+        <span>Fais glisser l'épingle, ou touche la carte, pour poser l'endroit exact.</span></div>
+      <div class="wiz-nav"><button class="back" id="b5">Retour</button>
+        <button class="go" id="n5">Continuer</button></div>
+    </div>
+
+    <div class="wiz-step" data-step="6">
       <div class="wiz-head"><span class="wiz-n" data-n></span><h2>Tout est prêt</h2>
         <p>Un dernier coup d'œil avant d'envoyer.</p></div>
       <div class="recap"><img id="r-img" alt="">
-        <div class="recap-i"><b id="r-col"></b><span class="badge" id="r-st"></span></div></div>
-      <div class="geo" id="geo"><svg><use href="#i-pin"/></svg><span id="geo-t">Localisation en cours…</span></div>
-      <div class="wiz-nav"><button class="back" id="b5">Retour</button>
+        <div class="recap-i"><b id="r-col"></b><span class="badge" id="r-st"></span>
+          <small id="r-pics"></small></div></div>
+      <div class="fld"><label for="f-note">Une note (facultatif)</label>
+        <input type="text" id="f-note" maxlength="160" placeholder="Très craintif, ne pas approcher" autocomplete="off"></div>
+      <div class="wiz-nav"><button class="back" id="b6">Retour</button>
         <button class="go" id="go">Ajouter à la carte</button></div>
     </div>
 
@@ -567,15 +621,20 @@ nav button:active{transform:scale(.94)}
       <button class="st p-Danger" data-p="Danger"><span class="si"><svg><use href="#i-alert"/></svg></span>
         <span class="txt"><b>Zone dangereuse</b><span class="sd">Route passante, chantier, piège</span></span></button>
     </div>
-    <div class="fld" style="margin-top:18px"><label for="p-note">Une précision (facultatif)</label>
-      <input type="text" id="p-note" maxlength="100" placeholder="Derrière le local à vélos" autocomplete="off"></div>
-    <div class="geo" id="pgeo"><svg><use href="#i-pin"/></svg><span id="pgeo-t">Localisation en cours…</span></div>
+    <div class="fld" style="margin-top:18px"><label for="p-note">Une note (facultatif)</label>
+      <input type="text" id="p-note" maxlength="160" placeholder="Derrière le local à vélos" autocomplete="off"></div>
+    <label style="display:block;font-size:13.5px;font-weight:680;margin-bottom:7px">Photos (facultatif)</label>
+    <div class="shots" id="pshots" style="margin-bottom:18px"></div>
+    <input type="file" id="pfile" accept="image/*" capture="environment" style="display:none">
+    <label style="display:block;font-size:13.5px;font-weight:680;margin-bottom:7px">L'endroit exact</label>
+    <div class="pickmap" id="pickmap-place"></div>
+    <div class="pickhint"><svg><use href="#i-pin"/></svg>
+      <span>Fais glisser l'épingle, ou touche la carte, pour poser l'endroit exact.</span></div>
     <button class="go" id="p-go" disabled>Ajouter ce lieu</button>
   </div>
 </section>
 
 <section id="v-list" class="view"><div class="pad" id="list-pad"></div></section>
-
 <section id="v-me" class="view"><div class="pad" id="me-pad"></div></section>
 
 </main>
@@ -592,9 +651,9 @@ nav button:active{transform:scale(.94)}
   <p class="sub">Chaque chat croisé, chaque gamelle, chaque coin dangereux. À plusieurs, on finit par tous les connaître.</p>
   <ul>
     <li><span class="li"><svg><use href="#i-cam"/></svg></span>
-      <div><b>Tu croises un chat</b><span>Une photo et sa couleur suffisent. Il rejoint la carte du quartier.</span></div></li>
+      <div><b>Tu croises un chat</b><span>Une photo bien cadrée, sa couleur, et il rejoint la carte.</span></div></li>
     <li><span class="li"><svg><use href="#i-target"/></svg></span>
-      <div><b>Sa zone se précise</b><span>Chaque nouvelle observation resserre le territoire où on peut le trouver.</span></div></li>
+      <div><b>Sa zone se précise</b><span>Chaque nouvelle observation resserre le territoire où le trouver.</span></div></li>
     <li><span class="li"><svg><use href="#i-bowl"/></svg></span>
       <div><b>Tu repères un lieu utile</b><span>Gamelle, point d'eau, abri, ou route dangereuse à éviter.</span></div></li>
   </ul>
@@ -609,6 +668,14 @@ nav button:active{transform:scale(.94)}
   <span class="ico"><svg><use href="#i-check"/></svg></span>
   <b id="ok-msg"></b><span class="xp" id="ok-xp"></span></div></div>
 
+<div class="sheet" id="sh-digest"><div class="card">
+  <div class="grab"></div>
+  <h2 id="dg-title"></h2>
+  <p id="dg-sub"></p>
+  <div class="digest" id="dg-body"></div>
+  <button class="go" id="dg-close">Voir la carte</button>
+</div></div>
+
 <div class="sheet" id="sh-pick"><div class="card">
   <div class="grab"></div>
   <h2>Qu'est-ce que tu ajoutes ?</h2>
@@ -620,12 +687,26 @@ nav button:active{transform:scale(.94)}
   </div>
 </div></div>
 
+<div class="sheet" id="sh-report"><div class="card">
+  <div class="grab"></div>
+  <h2>Signaler un problème</h2>
+  <p>Au bout de trois signalements, la photo est masquée en attendant vérification.</p>
+  <div class="reasons">
+    <button data-r="La photo ne montre pas ce chat">La photo est incorrecte</button>
+    <button data-r="Ce n'est pas un chat">Ce n'est pas un chat</button>
+    <button data-r="Doublon">C'est un doublon</button>
+    <button data-r="Contenu inapproprié">Contenu inapproprié</button>
+  </div>
+  <button class="ghost" id="report-cancel" style="margin-top:12px">Annuler</button>
+</div></div>
+
 <div class="sheet" id="sh-legal"><div class="card">
   <div class="grab"></div>
   <h2>Vie privée et données</h2>
-  <p class="t"><b>Ce qui est public.</b> Tout signalement — la photo, la position approximative, la couleur, la situation, les lieux, et le nom et contact saisis pour un chat perdu — est visible par tous les utilisateurs. N'indique jamais une information que tu ne veux pas rendre publique.</p>
-  <p class="t"><b>Ta position.</b> Elle sert uniquement à placer les signalements sur la carte et à calculer les distances. Elle n'est ni enregistrée en continu, ni associée à ton identité.</p>
+  <p class="t"><b>Ce qui est public.</b> Tout signalement — les photos, la position, la couleur, la situation, les notes, les lieux, et le nom et contact saisis pour un chat perdu — est visible par tous les utilisateurs. N'indique jamais une information que tu ne veux pas rendre publique.</p>
+  <p class="t"><b>Ta position.</b> Elle sert uniquement à placer les signalements sur la carte et à calculer les distances. Elle n'est ni enregistrée en continu, ni associée à ton identité. Tu peux toujours corriger l'endroit exact avec l'épingle avant d'envoyer.</p>
   <p class="t"><b>Aucun compte.</b> L'app ne demande ni e-mail, ni mot de passe. Ta progression et tes points sont gardés sur ce téléphone uniquement : ils ne sont ni envoyés, ni comparés à ceux des autres.</p>
+  <p class="t"><b>Signalements.</b> Chacun peut signaler une photo ou une fiche incorrecte. Au bout de trois signalements, la photo est masquée automatiquement.</p>
   <p class="t"><b>Hébergement.</b> Les données sont stockées chez Google Firebase (Firestore, région Europe).</p>
   <p class="t"><b>Effacer un signalement.</b> L'app ne permet pas encore de supprimer une fiche soi-même. Écris-nous et nous la retirerons.</p>
   <p class="t"><b>Chats perdus.</b> CatMap est un outil d'entraide entre voisins. Elle ne remplace ni la mairie, ni un vétérinaire, ni le fichier national I-CAD.</p>
@@ -636,14 +717,14 @@ nav button:active{transform:scale(.94)}
   <div class="grab"></div>
   <h2>Ce chat est déjà connu ?</h2>
   <p>Un chat <b id="m-col"></b> a été signalé à <b id="m-dist"></b> d'ici. C'est le même ?</p>
-  <img class="hero" id="m-img" alt="">
+  <img class="hero" id="m-img" alt="" style="width:100%;height:230px;object-fit:cover;border-radius:22px;margin-bottom:16px;background:var(--surface-2)">
   <div class="two"><button class="y" id="m-yes">Oui, le même</button><button id="m-no">Non, un autre</button></div>
 </div></div>
 
 <div class="sheet" id="sh-det"><div class="card">
   <div class="grab"></div>
   <h2 id="d-title"></h2>
-  <img class="hero" id="d-img" alt="">
+  <div id="d-pics"></div>
   <div class="zone" id="d-zone"><span class="zi"><svg><use href="#i-target"/></svg></span>
     <div><b id="d-zone-t"></b><small id="d-zone-s"></small></div></div>
   <div class="contact" id="d-contact" style="display:none">
@@ -651,16 +732,19 @@ nav button:active{transform:scale(.94)}
     <div><small id="d-contact-lbl"></small><span id="d-contact-val"></span></div></div>
   <div id="d-rows"></div>
   <div class="act" id="d-act"></div>
-  <button class="ghost" id="d-close" style="margin-top:10px">Fermer</button>
+  <button class="danger-btn" id="d-report"><svg style="display:inline;vertical-align:-3px;width:15px;height:15px;stroke-width:2" viewBox="0 0 24 24" fill="none" stroke="currentColor"><use href="#i-flag"/></svg> Signaler un problème</button>
+  <button class="ghost" id="d-close" style="margin-top:9px">Fermer</button>
 </div></div>
 
 <div class="sheet" id="sh-place"><div class="card">
   <div class="grab"></div>
   <h2 id="q-title"></h2>
+  <div id="q-pics"></div>
   <p id="q-note"></p>
   <div id="q-rows"></div>
   <div class="act" id="q-act"></div>
-  <button class="ghost" id="q-close" style="margin-top:10px">Fermer</button>
+  <button class="danger-btn" id="q-report"><svg style="display:inline;vertical-align:-3px;width:15px;height:15px;stroke-width:2" viewBox="0 0 24 24" fill="none" stroke="currentColor"><use href="#i-flag"/></svg> Signaler un problème</button>
+  <button class="ghost" id="q-close" style="margin-top:9px">Fermer</button>
 </div></div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -688,27 +772,30 @@ const LIGHT=['Blanc'];
 const PICO={Gamelle:'i-bowl',Eau:'i-drop',Abri:'i-home',Danger:'i-alert'};
 const PCOL={Gamelle:'#b7791f',Eau:'#0a6fb5',Abri:'#15803d',Danger:'#d92d20'};
 const PLBL={Gamelle:'Gamelle',Eau:"Point d'eau",Abri:'Abri',Danger:'Zone dangereuse'};
+const OSM='https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+const MAXPICS=4;
 
-let photo=null,thumb=null,color=null,status=null,ptype=null,pos=null,
-    map=null,layer=null,pending=null,view='map',step=1,filter='all',tab='cats';
+let shots=[],pshots=[],color=null,status=null,ptype=null,pos=null,
+    map=null,layer=null,pending=null,view='map',step=1,filter='all',tab='cats',
+    reportTarget=null;
 let cats=[],places=[];
 const photoCache=new Map();
 
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const flagged=x=>(x.flags||0)>=3;
 
 /* ---------- progression, gardée sur cet appareil uniquement ---------- */
 const XP_KEY='catmap.me.v1';
 const LEVELS=[
  {min:0,n:'Curieux'},{min:120,n:'Observateur'},{min:350,n:'Éclaireur'},
  {min:800,n:'Pisteur'},{min:1600,n:'Gardien du quartier'},{min:3200,n:'Légende féline'}];
-const GAIN={cat:25,obs:10,place:15,confirm:5,found:50};
+const GAIN={cat:25,obs:10,place:15,confirm:5,found:50,report:0};
 let me={xp:0,cats:0,obs:0,places:0};
 try{me=Object.assign(me,JSON.parse(localStorage.getItem(XP_KEY)||'{}'))}catch{}
 const saveMe=()=>{try{localStorage.setItem(XP_KEY,JSON.stringify(me))}catch{}};
 const levelOf=xp=>LEVELS.reduce((a,l)=>xp>=l.min?l:a,LEVELS[0]);
 const nextOf=xp=>LEVELS.find(l=>l.min>xp)||null;
-
 function award(kind){
  const before=levelOf(me.xp).n;
  me.xp+=GAIN[kind]||0;
@@ -722,16 +809,20 @@ function award(kind){
 }
 function paintLevel(){$('#hdr-lvl').textContent=levelOf(me.xp).n}
 
-/* ---------- photos ---------- */
-async function loadPhoto(id){
- if(photoCache.has(id))return photoCache.get(id);
+/* ---------- photos ----------
+   La première photo vit sous photos/{id}, les suivantes sous photos/{id}-2, -3…
+   Cela évite d'alourdir la fiche et de gérer une requête indexée. */
+const picId=(id,i)=>i===0?id:`${id}-${i+1}`;
+async function loadPhoto(id,i=0){
+ const key=picId(id,i);
+ if(photoCache.has(key))return photoCache.get(key);
  /* fiches d'avant la séparation : la photo est encore dans la fiche elle-même */
  const old=cats.find(x=>x.id===id);
- if(old&&old.photo){photoCache.set(id,old.photo);return old.photo}
+ if(i===0&&old&&old.photo){photoCache.set(key,old.photo);return old.photo}
  try{
-  const snap=await getDoc(doc(db,'photos',id));
+  const snap=await getDoc(doc(db,'photos',key));
   const data=snap.exists()?snap.data().data:null;
-  photoCache.set(id,data);return data;
+  photoCache.set(key,data);return data;
  }catch{return null}
 }
 
@@ -767,26 +858,61 @@ const zoneHint=n=>n>=6?"Le quartier l'a vu assez souvent pour cerner son territo
  :n>=3?"Quelques observations : la zone se précise déjà."
  :`${n===1?'Une seule observation':'Deux observations'} — signale-le si tu le croises, la zone se resserrera.`;
 
+/* ---------- croquis de chat ----------
+   Un rond de couleur ne dit rien ; une silhouette de chat teintée de la
+   couleur réelle du pelage se lit d'un coup d'œil sur la carte. */
+const lum=h=>{const n=parseInt(h.slice(1),16);
+ return (0.2126*(n>>16)+0.7152*((n>>8)&255)+0.0722*(n&255))/255};
+function catSVG(c,extraClass){
+ const light=lum(c)>.6,eye=light?'#3a332c':'#f7f3ec',line=light?'#8d857a':'#fff';
+ const marks=extraClass==='Tigré'
+  ?`<g stroke="${light?'#6b5a42':'#3b2f22'}" stroke-width="2.6" stroke-linecap="round" opacity=".75">
+     <path d="M24 27h16M22 34h8M42 34h-8"/></g>`
+  :extraClass==='Bicolore'
+  ?`<path d="M32 18a22 20 0 0 0-21.6 24A22 20 0 0 0 32 57z" fill="#f2efe9" opacity=".9"/>`:'';
+ return `<svg viewBox="0 0 64 64">
+  <g stroke="${line}" stroke-width="3" stroke-linejoin="round">
+   <path d="M13 30 16 6l17 12z" fill="${c}"/><path d="M51 30 48 6 31 18z" fill="${c}"/>
+   <ellipse cx="32" cy="37" rx="22" ry="20" fill="${c}"/></g>
+  ${marks}
+  <g fill="${eye}"><ellipse cx="24" cy="35" rx="2.8" ry="3.4"/><ellipse cx="40" cy="35" rx="2.8" ry="3.4"/></g>
+  <path d="M30.5 43.5h3l-1.5 2z" fill="${eye}"/></svg>`;
+}
+const catIcon=(k,size)=>L.divIcon({
+ className:'catpin '+(k.status==='Perdu'?'lost':k.status==='Retrouvé'?'found':''),
+ iconSize:[size,size],iconAnchor:[size/2,size/2],
+ html:catSVG(flagged(k)?'#9b9b9b':(COLORS[k.color]||'#999'),k.color)});
+
+const placeIcon=p=>L.divIcon({className:'placepin',iconSize:[34,42],iconAnchor:[17,42],
+ html:`<svg viewBox="0 0 34 42">
+   <path d="M17 41s14-15.6 14-24A14 14 0 1 0 3 17c0 8.4 14 24 14 24z"
+     fill="${PCOL[p.type]}" stroke="#fff" stroke-width="2.6" stroke-linejoin="round"/>
+   <g transform="translate(7.5,7.5) scale(0.79)" fill="none" stroke="#fff"
+     stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+     <use href="#${PICO[p.type]}"/></g></svg>`});
+
 /* ---------- parcours chat ---------- */
-const seq=()=>status==='Perdu'?[1,2,3,4,5]:[1,2,3,5];
+const seq=()=>status==='Perdu'?[1,2,3,4,5,6]:[1,2,3,5,6];
 function showStep(n){
  step=n;
  const s=seq(),i=s.indexOf(n);
- $('#wiz-steps').style.transform=`translateX(-${(n-1)*20}%)`;
+ $('#wiz-steps').style.transform=`translateX(-${(n-1)*(100/6)}%)`;
  $('#wiz-bar').innerHTML=s.map((_,j)=>`<span class="d${j===i?' on':j<i?' done':''}"></span>`).join('');
  document.querySelectorAll('.wiz-step').forEach(el=>{
   const k=s.indexOf(+el.dataset.step),lbl=el.querySelector('[data-n]');
   if(lbl)lbl.textContent=k<0?'':`Étape ${k+1} sur ${s.length}`});
- if(n===5){
-  $('#r-img').src=photo;
+ if(n===5)openPicker('pickmap-cat');
+ if(n===6){
+  $('#r-img').src=shots[0]?shots[0].thumb:'';
   const nm=$('#f-name').value.trim();
   $('#r-col').textContent=(nm&&status==='Perdu')?nm:color;
-  $('#r-st').textContent=status;$('#r-st').className='badge'+(status==='Perdu'?' lost':'')}
+  $('#r-st').textContent=status;$('#r-st').className='badge'+(status==='Perdu'?' lost':'');
+  $('#r-pics').textContent=shots.length>1?`${shots.length} photos`:'1 photo'}
 }
 const next=()=>{const s=seq();showStep(s[Math.min(s.indexOf(step)+1,s.length-1)])};
 const back=()=>{const s=seq();showStep(s[Math.max(s.indexOf(step)-1,0)])};
-['n1','n2','n3','n4'].forEach(id=>$('#'+id).onclick=next);
-['b2','b3','b4','b5'].forEach(id=>$('#'+id).onclick=back);
+['n1','n2','n3','n4','n5'].forEach(id=>$('#'+id).onclick=next);
+['b2','b3','b4','b5','b6'].forEach(id=>$('#'+id).onclick=back);
 
 $('#cols').innerHTML=Object.entries(COLORS).map(([n,c])=>
  `<button class="col${LIGHT.includes(n)?' light':''}" data-c="${n}" style="background:${c}">
@@ -800,6 +926,7 @@ document.querySelectorAll('#v-add .st').forEach(b=>b.onclick=()=>{
  /* « Perdu » ajoute une étape : l'indicateur doit le refléter tout de suite */
  showStep(step)});
 
+/* ---------- prise de photo ---------- */
 function resize(img,max,quality){
  const cv=document.createElement('canvas');
  let{width:w,height:h}=img;
@@ -807,66 +934,146 @@ function resize(img,max,quality){
  cv.width=w;cv.height=h;cv.getContext('2d').drawImage(img,0,0,w,h);
  return cv.toDataURL('image/jpeg',quality);
 }
-$('#file').onchange=e=>{const f=e.target.files[0];if(!f)return;
+/* luminance moyenne : une photo trop sombre ne laisse pas voir la couleur du pelage */
+function meanLum(img){
+ const cv=document.createElement('canvas');cv.width=32;cv.height=32;
+ const cx=cv.getContext('2d');cx.drawImage(img,0,0,32,32);
+ const d=cx.getImageData(0,0,32,32).data;let s=0;
+ for(let i=0;i<d.length;i+=4)s+=.2126*d[i]+.7152*d[i+1]+.0722*d[i+2];
+ return s/(d.length/4);
+}
+function readShot(f,into,after){
  const img=new Image(),r=new FileReader();
  r.onload=()=>{img.onload=()=>{
-  photo=resize(img,900,.75);thumb=resize(img,120,.5);
-  $('#prev').src=photo;$('#shotbox').style.display='none';$('#prevbox').style.display='block';
-  $('#n1').disabled=false};
+  into.push({full:resize(img,900,.75),thumb:resize(img,120,.5),dark:meanLum(img)<58});
+  after()};
   img.src=r.result};
- r.readAsDataURL(f)};
-$('#retake').onclick=()=>{photo=thumb=null;$('#file').value='';
- $('#shotbox').style.display='block';$('#prevbox').style.display='none';$('#n1').disabled=true};
+ r.readAsDataURL(f);
+}
+function drawShots(){
+ $('#shots').innerHTML=shots.map((s,i)=>`
+  <div class="shotitem"><img src="${s.thumb}" alt="">
+   <button class="rm" data-rm="${i}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+     stroke-linecap="round"><use href="#i-x"/></svg></button>
+   ${s.dark?'<span class="dk">trop sombre</span>':''}</div>`).join('')
+  +(shots.length<MAXPICS?`<button class="shotadd" id="addshot">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><use href="#i-cam"/></svg>
+    ${shots.length?'Ajouter une photo':'Prendre une photo'}</button>`:'');
+ $('#darkwarn').classList.toggle('on',shots.some(s=>s.dark));
+ $('#n1').disabled=!shots.length;
+ const a=$('#addshot');if(a)a.onclick=()=>$('#file').click();
+ document.querySelectorAll('#shots [data-rm]').forEach(b=>b.onclick=()=>{
+  shots.splice(+b.dataset.rm,1);drawShots()});
+}
+$('#file').onchange=e=>{const f=e.target.files[0];if(!f)return;
+ readShot(f,shots,()=>{drawShots();e.target.value=''})};
+drawShots();
+
+function drawPShots(){
+ $('#pshots').innerHTML=pshots.map((s,i)=>`
+  <div class="shotitem"><img src="${s.thumb}" alt="">
+   <button class="rm" data-prm="${i}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+     stroke-linecap="round"><use href="#i-x"/></svg></button></div>`).join('')
+  +(pshots.length<MAXPICS?`<button class="shotadd" id="paddshot">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"><use href="#i-cam"/></svg>
+    ${pshots.length?'Ajouter':'Photo du lieu'}</button>`:'');
+ const a=$('#paddshot');if(a)a.onclick=()=>$('#pfile').click();
+ document.querySelectorAll('#pshots [data-prm]').forEach(b=>b.onclick=()=>{
+  pshots.splice(+b.dataset.prm,1);drawPShots()});
+}
+$('#pfile').onchange=e=>{const f=e.target.files[0];if(!f)return;
+ readShot(f,pshots,()=>{drawPShots();e.target.value=''})};
+drawPShots();
+
+/* ---------- épingle déplaçable ----------
+   Le GPS d'un téléphone se trompe couramment de 10 à 30 m en ville, et on
+   photographie souvent un chat d'en face. On demande donc de confirmer. */
+const pickers={};
+const dragIcon=L.divIcon({className:'dragpin',iconSize:[36,44],iconAnchor:[18,44],
+ html:`<svg viewBox="0 0 34 42"><path d="M17 41s14-15.6 14-24A14 14 0 1 0 3 17c0 8.4 14 24 14 24z"
+   fill="#4b40d9" stroke="#fff" stroke-width="2.6" stroke-linejoin="round"/>
+   <circle cx="17" cy="17" r="5" fill="#fff"/></svg>`});
+function openPicker(id){
+ const start=pos?[pos.lat,pos.lng]:[49.4,2.3];
+ if(!pickers[id]){
+  const m=L.map(id,{zoomControl:false,attributionControl:false}).setView(start,17);
+  L.tileLayer(OSM,{maxZoom:19}).addTo(m);
+  const mk=L.marker(start,{draggable:true,icon:dragIcon}).addTo(m);
+  m.on('click',e=>mk.setLatLng(e.latlng));
+  pickers[id]={m,mk,touched:false};
+  mk.on('dragend',()=>pickers[id].touched=true);
+  m.on('click',()=>pickers[id].touched=true);
+ }else if(!pickers[id].touched&&pos){
+  pickers[id].m.setView(start,17);pickers[id].mk.setLatLng(start);
+ }
+ setTimeout(()=>pickers[id].m.invalidateSize(),120);
+}
+const picked=id=>{
+ const p=pickers[id];
+ if(p){const l=p.mk.getLatLng();return{lat:l.lat,lng:l.lng}}
+ return pos;
+};
+const resetPicker=id=>{if(pickers[id])pickers[id].touched=false};
 
 function geo(){
- if(!navigator.geolocation){$('#geo-t').textContent='GPS indisponible';return}
+ if(!navigator.geolocation)return;
  navigator.geolocation.getCurrentPosition(p=>{
   pos={lat:p.coords.latitude,lng:p.coords.longitude};
-  const t='Position trouvée (±'+Math.round(p.coords.accuracy)+' m)';
-  $('#geo-t').textContent=t;$('#geo').classList.add('ok');
-  $('#pgeo-t').textContent=t;$('#pgeo').classList.add('ok');
-  updateBadge();if(view==='map')drawMap()},
- ()=>{const t='Position refusée — autorise la localisation';
-  $('#geo-t').textContent=t;$('#pgeo-t').textContent=t},
+  updateBadge();maybeDigest();
+  if(view==='map')drawMap();
+  ['pickmap-cat','pickmap-place'].forEach(id=>{
+   if(pickers[id]&&!pickers[id].touched){
+    pickers[id].m.setView([pos.lat,pos.lng],17);pickers[id].mk.setLatLng([pos.lat,pos.lng])}});
+ },()=>toast('Position refusée — autorise la localisation pour placer tes signalements'),
  {enableHighAccuracy:true,timeout:10000});
 }
 geo();
 
-const here=()=>({a:+pos.lat.toFixed(5),o:+pos.lng.toFixed(5)});
+const spotOf=p=>({a:+p.lat.toFixed(5),o:+p.lng.toFixed(5)});
 
 $('#go').onclick=()=>{
- if(!pos){toast('Position requise — autorise le GPS');geo();return}
- const near=cats.filter(c=>c.color===color&&c.status!=='Retrouvé'&&dist(pos.lat,pos.lng,c.lat,c.lng)<300)
-   .sort((a,b)=>dist(pos.lat,pos.lng,a.lat,a.lng)-dist(pos.lat,pos.lng,b.lat,b.lng));
+ const at=picked('pickmap-cat');
+ if(!at){toast('Position requise — autorise le GPS');geo();return}
+ const near=cats.filter(c=>c.color===color&&c.status!=='Retrouvé'&&dist(at.lat,at.lng,c.lat,c.lng)<300)
+   .sort((a,b)=>dist(at.lat,at.lng,a.lat,a.lng)-dist(at.lat,at.lng,b.lat,b.lng));
  if(near.length){pending=near[0];
   $('#m-col').textContent=color.toLowerCase();
-  $('#m-dist').textContent=fmt(dist(pos.lat,pos.lng,pending.lat,pending.lng));
+  $('#m-dist').textContent=fmt(dist(at.lat,at.lng,pending.lat,pending.lng));
   $('#m-img').src=pending.thumb||pending.photo||'';
   loadPhoto(pending.id).then(p=>{if(p&&pending)$('#m-img').src=p});
   $('#sh-match').classList.add('on')}
  else addCat()};
 
+async function pushPics(id,arr){
+ for(let i=0;i<arr.length;i++)
+  await setDoc(doc(db,'photos',picId(id,i)),{data:arr[i].full});
+}
+
 async function addCat(){
- const ref=doc(catsCol),now=new Date().toISOString();
- const data={color,status,thumb,lat:pos.lat,lng:pos.lng,first:now,last:now,seen:1,spots:[here()]};
+ const at=picked('pickmap-cat'),ref=doc(catsCol),now=new Date().toISOString();
+ const data={color,status,thumb:shots[0].thumb,lat:at.lat,lng:at.lng,
+  first:now,last:now,seen:1,spots:[spotOf(at)],pics:shots.length};
  if(status==='Perdu'){
   const n=$('#f-name').value.trim(),c=$('#f-contact').value.trim();
   if(n)data.name=n;
   if(c)data.contact=c;
  }
+ const note=$('#f-note').value.trim();
+ if(note)data.note=note;
  /* le message se calcule avant reset(), qui remet status à null */
  const msg=status==='Perdu'?'Alerte lancée aux voisins':'Chat ajouté à la carte';
  try{
-  /* la photo d'abord : quand la fiche apparaît, son image est déjà en place */
-  await setDoc(doc(db,'photos',ref.id),{data:photo});
+  /* les photos d'abord : quand la fiche apparaît, ses images sont déjà en place */
+  await pushPics(ref.id,shots);
   await setDoc(ref,data);
   resetCat();go('map');celebrate(msg,award('cat'));
  }catch{toast("Envoi impossible — vérifie ta connexion")}
 }
 
 $('#m-yes').onclick=async()=>{
- const k=pending,spots=[...(k.spots||[]),here()].slice(-12);
- const upd={seen:increment(1),last:new Date().toISOString(),lat:pos.lat,lng:pos.lng,spots};
+ const k=pending,at=picked('pickmap-cat');
+ const spots=[...(k.spots||[]),spotOf(at)].slice(-12);
+ const upd={seen:increment(1),last:new Date().toISOString(),lat:at.lat,lng:at.lng,spots};
  if(status==='Perdu')upd.status='Perdu';
  try{await updateDoc(doc(db,'cats',k.id),upd);
   $('#sh-match').classList.remove('on');resetCat();go('map');
@@ -874,12 +1081,11 @@ $('#m-yes').onclick=async()=>{
  }catch{toast('Impossible pour le moment')}};
 $('#m-no').onclick=()=>{$('#sh-match').classList.remove('on');addCat()};
 
-function resetCat(){photo=thumb=color=status=null;pending=null;
- $('#shotbox').style.display='block';$('#prevbox').style.display='none';$('#file').value='';
- $('#f-name').value='';$('#f-contact').value='';
+function resetCat(){shots=[];color=status=null;pending=null;
+ $('#f-name').value='';$('#f-contact').value='';$('#f-note').value='';
  document.querySelectorAll('.col,#v-add .st').forEach(b=>b.classList.remove('on'));
- $('#n1').disabled=true;$('#n2').disabled=true;$('#n3').disabled=true;
- showStep(1)}
+ $('#n2').disabled=true;$('#n3').disabled=true;
+ resetPicker('pickmap-cat');drawShots();showStep(1)}
 showStep(1);
 
 /* ---------- lieux ---------- */
@@ -888,16 +1094,19 @@ document.querySelectorAll('#ptypes .st').forEach(b=>b.onclick=()=>{
  b.classList.add('on');ptype=b.dataset.p;$('#p-go').disabled=false});
 
 $('#p-go').onclick=async()=>{
- if(!pos){toast('Position requise — autorise le GPS');geo();return}
- const now=new Date().toISOString();
- const data={type:ptype,lat:pos.lat,lng:pos.lng,first:now,last:now,ok:1};
+ const at=picked('pickmap-place');
+ if(!at){toast('Position requise — autorise le GPS');geo();return}
+ const ref=doc(placesCol),now=new Date().toISOString();
+ const data={type:ptype,lat:at.lat,lng:at.lng,first:now,last:now,ok:1};
  const note=$('#p-note').value.trim();
  if(note)data.note=note;
+ if(pshots.length)data.pics=pshots.length;
  try{
-  await setDoc(doc(placesCol),data);
-  ptype=null;$('#p-note').value='';
+  await pushPics(ref.id,pshots);
+  await setDoc(ref,data);
+  ptype=null;pshots=[];$('#p-note').value='';
   document.querySelectorAll('#ptypes .st').forEach(x=>x.classList.remove('on'));
-  $('#p-go').disabled=true;
+  $('#p-go').disabled=true;resetPicker('pickmap-place');drawPShots();
   go('map');celebrate('Lieu ajouté à la carte',award('place'));
  }catch{toast("Envoi impossible — vérifie ta connexion")}};
 
@@ -909,6 +1118,7 @@ function go(v){
  if(v==='map')drawMap();
  if(v==='list')drawList();
  if(v==='me')drawMe();
+ if(v==='place')openPicker('pickmap-place');
 }
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>go(b.dataset.v));
 $('#fab').onclick=()=>$('#sh-pick').classList.add('on');
@@ -918,20 +1128,12 @@ $('#add-x').onclick=()=>go('map');
 $('#place-x').onclick=()=>go('map');
 
 /* ---------- carte ---------- */
-const pinIcon=(k,size)=>L.divIcon({className:'pin',iconSize:[size,size],iconAnchor:[size/2,size/2],
- html:`<i class="${k.status==='Perdu'?'lost':k.status==='Retrouvé'?'found':''}"
-   style="background-image:url('${k.thumb||k.photo||''}')"></i>`});
-const placeIcon=p=>L.divIcon({className:'plc',iconSize:[32,32],iconAnchor:[16,16],
- html:`<i class="${p.type}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-   stroke-linecap="round" stroke-linejoin="round"><use href="#${PICO[p.type]}"/></svg></i>`});
-
 function drawMap(){
  if(!map){
   map=L.map('map',{zoomControl:false}).setView(pos?[pos.lat,pos.lng]:[49.4,2.3],15);
   /* OpenStreetMap : libre et sans clé d'API. Le rendu neutre vient du
      filtre CSS sur .leaflet-tile-pane, pas d'un fournisseur payant. */
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-   {attribution:'© OpenStreetMap',maxZoom:19}).addTo(map);
+  L.tileLayer(OSM,{attribution:'© OpenStreetMap',maxZoom:19}).addTo(map);
  }
  setTimeout(()=>map.invalidateSize(),80);
  if(layer)layer.remove();
@@ -946,12 +1148,12 @@ function drawMap(){
 
  kk.forEach(k=>{
   const t=territory(k),lost=k.status==='Perdu',found=k.status==='Retrouvé';
+  const c=flagged(k)?'#9b9b9b':(COLORS[k.color]||'#999');
   /* la zone de vie : d'autant plus large qu'on a peu d'observations */
-  L.circle([t.lat,t.lng],{radius:t.radius,
-   color:lost?'#d92d20':COLORS[k.color]||'#999',weight:1.5,opacity:found?.25:.7,
-   fillColor:lost?'#d92d20':COLORS[k.color]||'#999',fillOpacity:found?.04:.12,
+  L.circle([t.lat,t.lng],{radius:t.radius,color:lost?'#d92d20':c,weight:1.5,
+   opacity:found?.25:.7,fillColor:lost?'#d92d20':c,fillOpacity:found?.04:.12,
    dashArray:t.n>=3?null:'5 5',interactive:false}).addTo(layer);
-  L.marker([t.lat,t.lng],{icon:pinIcon(k,found?32:44)}).addTo(layer).on('click',()=>detail(k.id))});
+  L.marker([t.lat,t.lng],{icon:catIcon(k,found?34:46)}).addTo(layer).on('click',()=>detail(k.id))});
 
  pp.forEach(p=>L.marker([p.lat,p.lng],{icon:placeIcon(p)}).addTo(layer)
    .on('click',()=>placeDetail(p.id)));
@@ -959,7 +1161,6 @@ function drawMap(){
  const all=[...kk.map(k=>{const t=territory(k);return[t.lat,t.lng]}),...pp.map(p=>[p.lat,p.lng])];
  if(all.length)map.fitBounds(L.latLngBounds(all).pad(.35),{maxZoom:16});
 }
-
 document.querySelectorAll('.map-ui .chip').forEach(c=>c.onclick=()=>{
  document.querySelectorAll('.map-ui .chip').forEach(x=>x.classList.remove('on'));
  c.classList.add('on');filter=c.dataset.f;drawMap()});
@@ -967,15 +1168,50 @@ $('#locate').onclick=()=>{
  if(!pos){toast('Position requise — autorise le GPS');geo();return}
  map&&map.flyTo([pos.lat,pos.lng],16,{duration:.6})};
 
+/* ---------- résumé à l'ouverture ----------
+   Ce n'est pas une notification push (qui exigerait un serveur et passe mal
+   sur iOS) : c'est un récapitulatif de ce qui a été ajouté autour de toi
+   depuis ta dernière visite, montré au lancement. */
+const LAST='catmap.lastopen.v1',RADIUS=2000;
+let lastOpen=0,digestDone=false,loaded={cats:false,places:false};
+try{lastOpen=+(localStorage.getItem(LAST)||0)}catch{}
+const stamp=()=>{try{localStorage.setItem(LAST,String(Date.now()))}catch{}};
+function maybeDigest(){
+ if(digestDone||!pos||!loaded.cats||!loaded.places)return;
+ digestDone=true;
+ if(!lastOpen){stamp();return}          /* première ouverture : rien à résumer */
+ const since=new Date(lastOpen).toISOString();
+ const near=x=>dist(pos.lat,pos.lng,x.lat,x.lng)<RADIUS;
+ const nc=cats.filter(k=>k.first>since&&near(k));
+ const np=places.filter(p=>p.first>since&&near(p));
+ const nl=nc.filter(k=>k.status==='Perdu');
+ stamp();
+ if(!nc.length&&!np.length)return;
+ $('#dg-title').textContent='Depuis ta dernière visite';
+ $('#dg-sub').textContent=`Autour de toi, dans un rayon de ${fmt(RADIUS)}.`;
+ const rows=[];
+ if(nc.length)rows.push({c:'var(--brand)',i:'i-paw',b:`${nc.length} nouveau${nc.length>1?'x':''} chat${nc.length>1?'s':''}`,
+  s:'Ajoutés par tes voisins'});
+ if(nl.length)rows.push({c:'var(--danger)',i:'i-alert',b:`${nl.length} chat${nl.length>1?'s':''} perdu${nl.length>1?'s':''}`,
+  s:"Ouvre sa fiche si tu l'aperçois"});
+ if(np.length)rows.push({c:'var(--gold)',i:'i-bowl',b:`${np.length} nouveau${np.length>1?'x':''} lieu${np.length>1?'x':''}`,
+  s:'Gamelle, eau, abri ou danger'});
+ $('#dg-body').innerHTML=rows.map(r=>`<div class="dg">
+   <span class="di" style="background:${r.c}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+     stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#${r.i}"/></svg></span>
+   <div><b>${r.b}</b><small>${r.s}</small></div></div>`).join('');
+ $('#sh-digest').classList.add('on');
+}
+$('#dg-close').onclick=()=>$('#sh-digest').classList.remove('on');
+
 /* ---------- le quartier ---------- */
-const nearLost=()=>pos?cats.filter(k=>k.status==='Perdu'&&dist(pos.lat,pos.lng,k.lat,k.lng)<2000):[];
+const nearLost=()=>pos?cats.filter(k=>k.status==='Perdu'&&dist(pos.lat,pos.lng,k.lat,k.lng)<RADIUS):[];
 function updateBadge(){
  const btn=document.querySelector('nav button[data-v="list"]');
  const old=btn.querySelector('.nbadge');if(old)old.remove();
  const n=nearLost().length;
  if(n){const b=document.createElement('span');b.className='nbadge';b.textContent=n;btn.appendChild(b)}
 }
-
 function drawList(){
  const al=nearLost().length;
  const head=`<div class="alert${al?' on':''}"><svg><use href="#i-alert"/></svg>
@@ -988,9 +1224,11 @@ function drawList(){
   /* les chats perdus passent devant : c'est eux qui ont besoin d'aide */
   const rank=k=>k.status==='Perdu'?0:k.status==='Retrouvé'?2:1;
   const c=[...cats].sort((a,b)=>rank(a)-rank(b)||new Date(b.last)-new Date(a.last));
-  body=c.length?`<div class="list">${c.map(k=>{const t=territory(k);return`
+  body=c.length?`<div class="list">${c.map(k=>{const t=territory(k),pic=k.thumb||k.photo;return`
    <div class="item${k.status==='Retrouvé'?' found':''}" data-id="${k.id}">
-    <div class="dot" style="background:${COLORS[k.color]||'#999'}${(k.thumb||k.photo)?`;background-image:url(${k.thumb||k.photo})`:''}"></div>
+    <div class="dot" style="background:${COLORS[k.color]||'#999'}${(pic&&!flagged(k))?`;background-image:url(${pic})`:''}">
+     ${flagged(k)?`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+       stroke-linecap="round"><use href="#i-flag"/></svg>`:''}</div>
     <div class="txt"><b>${esc(k.name||k.color)}</b>
      <small>${zoneLabel(t.n)} · ${fmt(t.radius)}${pos?' · à '+fmt(dist(pos.lat,pos.lng,t.lat,t.lng)):''}</small></div>
     <span class="badge ${k.status==='Perdu'?'lost':k.status==='Retrouvé'?'ok':''}">${esc(k.status)}</span>
@@ -1002,7 +1240,7 @@ function drawList(){
   body=p.length?`<div class="list">${p.map(q=>`
    <div class="item" data-pid="${q.id}">
     <div class="dot" style="background:${PCOL[q.type]}"><svg viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><use href="#${PICO[q.type]}"/></svg></div>
+      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#${PICO[q.type]}"/></svg></div>
     <div class="txt"><b>${esc(PLBL[q.type]||q.type)}</b>
      <small>${q.note?esc(q.note)+' · ':''}${q.ok} confirmation${q.ok>1?'s':''}${pos?' · à '+fmt(dist(pos.lat,pos.lng,q.lat,q.lng)):''}</small></div>
    </div>`).join('')}</div>`
@@ -1053,18 +1291,33 @@ function drawMe(){
  $('#me-legal').onclick=e=>{e.preventDefault();$('#sh-legal').classList.add('on')};
 }
 
+/* ---------- galerie ---------- */
+function gallery(box,x,id){
+ if(flagged(x)){
+  box.innerHTML=`<div class="hidden-pic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    stroke-linecap="round" stroke-linejoin="round"><use href="#i-flag"/></svg>
+    <span>Photo masquée : plusieurs personnes ont signalé un problème sur cette fiche.</span></div>`;
+  return}
+ const n=Math.max(1,x.pics||1);
+ box.innerHTML=`<div class="gal${n>1?' multi':''}">`+
+  Array.from({length:n},(_,i)=>`<img data-i="${i}" src="${i===0?(x.thumb||x.photo||''):''}" alt="">`).join('')+
+  `</div>`;
+ for(let i=0;i<n;i++)loadPhoto(id,i).then(p=>{
+  const el=box.querySelector(`[data-i="${i}"]`);if(el&&p)el.src=p});
+}
+
 /* ---------- fiches ---------- */
+let detailId=null;
 function detail(id){
  const k=cats.find(x=>x.id===id);if(!k)return;
+ detailId={kind:'cats',id};
  const t=territory(k);
  $('#d-title').textContent=(k.name?k.name+' · ':'')+k.color+' · '+k.status;
- /* la miniature s'affiche tout de suite, la vraie photo la remplace dès son arrivée */
- $('#d-img').src=k.thumb||k.photo||'';
- loadPhoto(id).then(p=>{if(p)$('#d-img').src=p});
+ gallery($('#d-pics'),k,id);
  $('#d-zone-t').textContent=`${zoneLabel(t.n)} · rayon ${fmt(t.radius)}`;
  $('#d-zone-s').textContent=zoneHint(t.n);
 
- /* contact saisi par un autre utilisateur : jamais injecté en HTML */
+ /* contact et note saisis par d'autres : jamais injectés en HTML */
  const showContact=k.contact&&k.status==='Perdu';
  $('#d-contact').style.display=showContact?'flex':'none';
  if(showContact){
@@ -1072,7 +1325,8 @@ function detail(id){
   $('#d-contact-val').textContent=k.contact}
 
  $('#d-rows').innerHTML=
- `<div class="row"><span>Observations</span><span>${k.seen}</span></div>
+ `${k.note?`<div class="row"><span>Note</span><span>${esc(k.note)}</span></div>`:''}
+  <div class="row"><span>Observations</span><span>${k.seen}</span></div>
   <div class="row"><span>Première fois</span><span>${new Date(k.first).toLocaleDateString('fr-FR')}</span></div>
   <div class="row"><span>Dernière fois</span><span>${new Date(k.last).toLocaleDateString('fr-FR')}</span></div>
   ${pos?`<div class="row"><span>Distance</span><span>${fmt(dist(pos.lat,pos.lng,t.lat,t.lng))}</span></div>`:''}`;
@@ -1089,7 +1343,7 @@ function detail(id){
 async function markSeen(id){
  if(!pos){toast('Position requise — autorise le GPS');geo();return}
  const k=cats.find(x=>x.id===id);
- const spots=[...(k.spots||[]),here()].slice(-12);
+ const spots=[...(k.spots||[]),spotOf(pos)].slice(-12);
  try{
   await updateDoc(doc(db,'cats',id),
    {seen:increment(1),last:new Date().toISOString(),lat:pos.lat,lng:pos.lng,spots});
@@ -1105,7 +1359,9 @@ async function markFound(id){
 
 function placeDetail(id){
  const q=places.find(x=>x.id===id);if(!q)return;
+ detailId={kind:'places',id};
  $('#q-title').textContent=PLBL[q.type]||q.type;
+ if(q.pics)gallery($('#q-pics'),q,id);else $('#q-pics').innerHTML='';
  $('#q-note').textContent=q.note||(q.type==='Danger'
   ?'Un endroit où les chats risquent de se blesser.'
   :'Un repère utile pour prendre soin des chats du coin.');
@@ -1120,6 +1376,22 @@ function placeDetail(id){
    $('#sh-place').classList.remove('on');celebrate('Merci pour la confirmation',award('confirm'));
   }catch{toast('Impossible pour le moment')}};
  $('#sh-place').classList.add('on')}
+
+/* ---------- signalement ----------
+   Sans comptes ni modération, le seul garde-fou possible est collectif :
+   trois signalements masquent la photo en attendant une vérification. */
+$('#d-report').onclick=()=>{reportTarget=detailId;$('#sh-report').classList.add('on')};
+$('#q-report').onclick=()=>{reportTarget=detailId;$('#sh-report').classList.add('on')};
+$('#report-cancel').onclick=()=>$('#sh-report').classList.remove('on');
+document.querySelectorAll('#sh-report .reasons button').forEach(b=>b.onclick=async()=>{
+ if(!reportTarget)return;
+ const {kind,id}=reportTarget;
+ try{
+  await updateDoc(doc(db,kind,id),{flags:increment(1)});
+  $('#sh-report').classList.remove('on');
+  $('#sh-det').classList.remove('on');$('#sh-place').classList.remove('on');
+  celebrate('Merci, c\'est signalé');
+ }catch{toast('Impossible pour le moment')}});
 
 $('#d-close').onclick=()=>$('#sh-det').classList.remove('on');
 $('#q-close').onclick=()=>$('#sh-place').classList.remove('on');
@@ -1140,17 +1412,18 @@ paintLevel();
 drawMap();
 onSnapshot(catsCol,snap=>{
  cats=snap.docs.map(d=>({id:d.id,...d.data()}));
- updateBadge();
+ loaded.cats=true;updateBadge();maybeDigest();
  if(view==='map')drawMap();
  if(view==='list')drawList();
  if(view==='me')drawMe();
 },()=>toast('Connexion au serveur impossible — mode hors ligne'));
 onSnapshot(placesCol,snap=>{
  places=snap.docs.map(d=>({id:d.id,...d.data()}));
+ loaded.places=true;maybeDigest();
  if(view==='map')drawMap();
  if(view==='list')drawList();
  if(view==='me')drawMe();
-},()=>{});
+},()=>{loaded.places=true});
 
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 </script>
