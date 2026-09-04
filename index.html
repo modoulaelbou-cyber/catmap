@@ -163,8 +163,8 @@ nav button:active{transform:scale(.94)}
 .wiz-bar .d.done,.wiz-bar .d.on{background:var(--brand)}
 .wiz-bar .d.done{opacity:.4}
 .wiz-track{flex:1;overflow:hidden;position:relative}
-.wiz-steps{display:flex;width:600%;height:100%;transition:transform .4s cubic-bezier(.32,.72,0,1)}
-.wiz-step{width:16.6667%;height:100%;overflow-y:auto;
+.wiz-steps{display:flex;width:700%;height:100%;transition:transform .4s cubic-bezier(.32,.72,0,1)}
+.wiz-step{width:14.2857%;height:100%;overflow-y:auto;
  padding:2px 20px calc(env(safe-area-inset-bottom) + 20px);-webkit-overflow-scrolling:touch}
 .wiz-head{margin-bottom:20px}
 .wiz-n{font-size:11.5px;font-weight:700;color:var(--ink-3)}
@@ -244,6 +244,13 @@ nav button:active{transform:scale(.94)}
 .note{display:flex;gap:9px;background:var(--surface-2);border-radius:14px;padding:13px;
  font-size:12.5px;color:var(--ink-2);line-height:1.5}
 .note svg{width:16px;height:16px;flex-shrink:0;margin-top:1px;stroke-width:1.9}
+
+.align{position:relative;aspect-ratio:1;border-radius:var(--r-lg);overflow:hidden;
+ background:var(--sunk);touch-action:none}
+.align canvas{position:absolute;inset:0;width:100%;height:100%}
+.al-mask{position:absolute;inset:0;pointer-events:none;color:var(--bg)}
+.al-mask svg{width:100%;height:100%}
+.al-ctl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
 
 /* ---- choix du lieu ---- */
 .pickmap{height:300px;border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--line);
@@ -374,6 +381,7 @@ nav button:active{transform:scale(.94)}
 .act button:active{transform:scale(.975)}
 .act .seen{background:var(--brand);color:var(--brand-ink);border-color:transparent}
 .act .found{background:var(--ok);color:#fff;border-color:transparent}
+.act .clear{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 35%,transparent)}
 .act .del{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 35%,transparent)}
 .contact{display:flex;gap:12px;align-items:center;background:var(--danger-soft);
  border-radius:var(--r);padding:14px;margin-bottom:14px}
@@ -562,6 +570,30 @@ nav button:active{transform:scale(.94)}
     </div>
 
     <div class="wiz-step" data-step="2">
+      <div class="wiz-head"><span class="wiz-n" data-n></span><h2>Cadre sa tête</h2>
+        <p>Place sa tête dans la découpe : c'est exactement cette image qui apparaîtra sur la carte.</p></div>
+      <div class="align" id="align">
+        <canvas id="al-cv"></canvas>
+        <div class="al-mask"><svg viewBox="0 0 64 64" preserveAspectRatio="none"><defs><mask id="mk">
+          <rect width="64" height="64" fill="#fff"/>
+          <path d="M13 30 16 6l17 12z" fill="#000"/><path d="M51 30 48 6 31 18z" fill="#000"/>
+          <ellipse cx="32" cy="37" rx="22" ry="20" fill="#000"/></mask></defs>
+          <rect width="64" height="64" fill="currentColor" mask="url(#mk)"/>
+          <g fill="none" stroke="#fff" stroke-width="1.1" opacity=".95">
+            <path d="M13 30 16 6l17 12z"/><path d="M51 30 48 6 31 18z"/>
+            <ellipse cx="32" cy="37" rx="22" ry="20"/></g></svg></div>
+      </div>
+      <div class="al-ctl">
+        <button class="ghost" id="al-zo">Réduire</button>
+        <button class="ghost" id="al-zi">Agrandir</button>
+      </div>
+      <div class="pickhint"><svg><use href="#i-crop"/></svg>
+        <span>Fais glisser la photo pour la recadrer. Sa vraie couleur remplira le croquis.</span></div>
+      <div class="wiz-nav"><button class="back" id="bA">Retour</button>
+        <button class="go" id="nA">Continuer</button></div>
+    </div>
+
+    <div class="wiz-step" data-step="3">
       <div class="wiz-head"><span class="wiz-n" data-n></span><h2>Sa couleur</h2>
         <p>Celle qu'on voit sur ta photo. Elle donnera sa couleur sur la carte.</p></div>
       <div class="cols" id="cols"></div>
@@ -569,7 +601,7 @@ nav button:active{transform:scale(.94)}
         <button class="go" id="n2" disabled>Continuer</button></div>
     </div>
 
-    <div class="wiz-step" data-step="3">
+    <div class="wiz-step" data-step="4">
       <div class="wiz-head"><span class="wiz-n" data-n></span><h2>Sa situation</h2>
         <p>Ce que tu observes en ce moment.</p></div>
       <div class="sts">
@@ -584,7 +616,7 @@ nav button:active{transform:scale(.94)}
         <button class="go" id="n3" disabled>Continuer</button></div>
     </div>
 
-    <div class="wiz-step" data-step="4">
+    <div class="wiz-step" data-step="5">
       <div class="wiz-head"><span class="wiz-n" data-n></span><h2>Aide à le retrouver</h2>
         <p>Pour que tes voisins puissent te prévenir.</p></div>
       <div class="fld"><label for="f-name">Son nom</label>
@@ -597,7 +629,7 @@ nav button:active{transform:scale(.94)}
         <button class="go" id="n4">Continuer</button></div>
     </div>
 
-    <div class="wiz-step" data-step="5">
+    <div class="wiz-step" data-step="6">
       <div class="wiz-head"><span class="wiz-n" data-n></span><h2>Où l'as-tu vu ?</h2>
         <p>Le GPS se trompe souvent de quelques mètres. Ajuste l'épingle.</p></div>
       <div class="pickmap" id="pickmap-cat"></div>
@@ -607,7 +639,7 @@ nav button:active{transform:scale(.94)}
         <button class="go" id="n5">Continuer</button></div>
     </div>
 
-    <div class="wiz-step" data-step="6">
+    <div class="wiz-step" data-step="7">
       <div class="wiz-head"><span class="wiz-n" data-n></span><h2>Tout est prêt</h2>
         <p>Un dernier coup d'œil avant d'envoyer.</p></div>
       <div class="recap"><img id="r-img" alt="">
@@ -853,6 +885,14 @@ const photoCache=new Map();
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const flagged=x=>(x.flags||0)>=3;
+/* l'admin est identifié par son e-mail Google vérifié — les règles Firestore
+   appliquent exactement la même condition côté serveur */
+const ADMIN='modoula.elbou@hotmail.com';
+const isAdmin=()=>!!(user&&user.email===ADMIN&&user.emailVerified);
+const pendingFlags=()=>[
+ ...cats.filter(k=>k.flags).map(k=>({kind:'cats',id:k.id,flags:k.flags,label:k.name||k.color})),
+ ...places.filter(p=>p.flags).map(p=>({kind:'places',id:p.id,flags:p.flags,label:PLBL[p.type]||p.type}))
+].sort((a,b)=>b.flags-a.flags);
 
 /* ---------- progression, gardée sur cet appareil uniquement ---------- */
 const XP_KEY='catmap.me.v1';
@@ -954,10 +994,24 @@ function catSVG(c,extraClass){
   <g fill="${eye}"><ellipse cx="24" cy="35" rx="2.8" ry="3.4"/><ellipse cx="40" cy="35" rx="2.8" ry="3.4"/></g>
   <path d="M30.5 43.5h3l-1.5 2z" fill="${eye}"/></svg>`;
 }
+/* avec un cadrage, la carte montre la photo réelle découpée en chat ;
+   sinon on retombe sur le croquis rempli de la couleur choisie */
+function catPhotoSVG(k){
+ const g='c'+Math.random().toString(36).slice(2,8);
+ return `<svg viewBox="0 0 64 64"><defs><clipPath id="${g}">
+   <path d="M13 30 16 6l17 12z"/><path d="M51 30 48 6 31 18z"/>
+   <ellipse cx="32" cy="37" rx="22" ry="20"/></clipPath></defs>
+  <g stroke="var(--surface)" stroke-width="3" stroke-linejoin="round" fill="none">
+   <path d="M13 30 16 6l17 12z"/><path d="M51 30 48 6 31 18z"/>
+   <ellipse cx="32" cy="37" rx="22" ry="20"/></g>
+  <image href="${k.mask}" x="0" y="0" width="64" height="64"
+   preserveAspectRatio="xMidYMid slice" clip-path="url(#${g})"/></svg>`;
+}
 const catIcon=(k,size)=>L.divIcon({
  className:'catpin '+(k.status==='Perdu'?'lost':k.status==='Retrouvé'?'found':''),
  iconSize:[size,size],iconAnchor:[size/2,size/2],
- html:catSVG(flagged(k)?'#9b9b9b':(COLORS[k.color]||'#999'),k.color)});
+ html:(k.mask&&!flagged(k))?catPhotoSVG(k)
+  :catSVG(flagged(k)?'#9b9b9b':(COLORS[k.color]||'#999'),k.color)});
 
 const placeIcon=p=>L.divIcon({className:'placepin',iconSize:[34,42],iconAnchor:[17,42],
  html:`<svg viewBox="0 0 34 42">
@@ -968,17 +1022,18 @@ const placeIcon=p=>L.divIcon({className:'placepin',iconSize:[34,42],iconAnchor:[
      <use href="#${PICO[p.type]}"/></g></svg>`});
 
 /* ---------- parcours chat ---------- */
-const seq=()=>status==='Perdu'?[1,2,3,4,5,6]:[1,2,3,5,6];
+const seq=()=>status==='Perdu'?[1,2,3,4,5,6,7]:[1,2,3,4,6,7];
 function showStep(n){
  step=n;
  const s=seq(),i=s.indexOf(n);
- $('#wiz-steps').style.transform=`translateX(-${(n-1)*(100/6)}%)`;
+ $('#wiz-steps').style.transform=`translateX(-${(n-1)*(100/7)}%)`;
  $('#wiz-bar').innerHTML=s.map((_,j)=>`<span class="d${j===i?' on':j<i?' done':''}"></span>`).join('');
  document.querySelectorAll('.wiz-step').forEach(el=>{
   const k=s.indexOf(+el.dataset.step),lbl=el.querySelector('[data-n]');
   if(lbl)lbl.textContent=k<0?'':`Étape ${k+1} sur ${s.length}`});
- if(n===5)openPicker('pickmap-cat');
- if(n===6){
+ if(n===2)startAlign();
+ if(n===6)openPicker('pickmap-cat');
+ if(n===7){
   $('#r-img').src=shots[0]?shots[0].thumb:'';
   const nm=$('#f-name').value.trim();
   $('#r-col').textContent=(nm&&status==='Perdu')?nm:color;
@@ -987,8 +1042,8 @@ function showStep(n){
 }
 const next=()=>{const s=seq();showStep(s[Math.min(s.indexOf(step)+1,s.length-1)])};
 const back=()=>{const s=seq();showStep(s[Math.max(s.indexOf(step)-1,0)])};
-['n1','n2','n3','n4','n5'].forEach(id=>$('#'+id).onclick=next);
-['b2','b3','b4','b5','b6'].forEach(id=>$('#'+id).onclick=back);
+['n1','nA','n2','n3','n4','n5'].forEach(id=>$('#'+id).onclick=next);
+['bA','b2','b3','b4','b5','b6'].forEach(id=>$('#'+id).onclick=back);
 
 $('#cols').innerHTML=Object.entries(COLORS).map(([n,c])=>
  `<button class="col${LIGHT.includes(n)?' light':''}" data-c="${n}" style="background:${c}">
@@ -1061,6 +1116,53 @@ $('#pfile').onchange=e=>{const f=e.target.files[0];if(!f)return;
  readShot(f,pshots,()=>{drawPShots();e.target.value=''})};
 drawPShots();
 
+/* ---------- cadrage de la tête ----------
+   La carte n'affiche pas un rond de couleur mais la photo elle-même découpée
+   en silhouette de chat. Pour que ça tombe juste, on demande à l'utilisateur
+   de placer la tête dans la découpe plutôt que de deviner par recadrage auto. */
+let alImg=null,alS=1,alX=0,alY=0,alBase=1;
+function drawAlign(){
+ const cv=$('#al-cv');if(!cv||!alImg)return;
+ const box=$('#align').getBoundingClientRect(),d=Math.round(box.width);
+ if(!d)return;
+ cv.width=d;cv.height=d;
+ const c=cv.getContext('2d');
+ c.fillStyle='#000';c.fillRect(0,0,d,d);
+ const w=alImg.width*alBase*alS,h=alImg.height*alBase*alS;
+ c.drawImage(alImg,(d-w)/2+alX*d,(d-h)/2+alY*d,w,h);
+}
+function startAlign(){
+ if(!shots.length)return;
+ const im=new Image();
+ im.onload=()=>{
+  alImg=im;
+  const box=$('#align').getBoundingClientRect(),d=box.width||300;
+  alBase=Math.max(d/im.width,d/im.height);   /* couvre le cadre */
+  alS=1;alX=0;alY=0;drawAlign();
+ };
+ im.src=shots[0].full;
+}
+(function alignGestures(){
+ const box=$('#align');let drag=false,px=0,py=0;
+ const pt=e=>e.touches?e.touches[0]:e;
+ box.addEventListener('pointerdown',e=>{drag=true;px=e.clientX;py=e.clientY;box.setPointerCapture(e.pointerId)});
+ box.addEventListener('pointermove',e=>{
+  if(!drag)return;
+  const d=box.getBoundingClientRect().width||1;
+  alX+=(e.clientX-px)/d;alY+=(e.clientY-py)/d;px=e.clientX;py=e.clientY;drawAlign()});
+ box.addEventListener('pointerup',()=>drag=false);
+ box.addEventListener('pointercancel',()=>drag=false);
+ $('#al-zi').onclick=()=>{alS=Math.min(4,alS*1.25);drawAlign()};
+ $('#al-zo').onclick=()=>{alS=Math.max(.5,alS/1.25);drawAlign()};
+})();
+/* la vignette carrée : c'est elle que la carte découpe en forme de chat */
+function maskShot(){
+ const cv=$('#al-cv');if(!cv||!cv.width)return null;
+ const out=document.createElement('canvas');out.width=out.height=96;
+ out.getContext('2d').drawImage(cv,0,0,96,96);
+ return out.toDataURL('image/jpeg',.72);
+}
+
 /* ---------- épingle déplaçable ----------
    Le GPS d'un téléphone se trompe couramment de 10 à 30 m en ville, et on
    photographie souvent un chat d'en face. On demande donc de confirmer. */
@@ -1127,7 +1229,9 @@ async function pushPics(id,arr){
 
 async function addCat(){
  const at=picked('pickmap-cat'),ref=doc(catsCol),now=new Date().toISOString();
+ const mask=maskShot();
  const data={color,status,thumb:shots[0].thumb,lat:at.lat,lng:at.lng,uid:uid(),
+  ...(mask?{mask}:{}),
   first:now,last:now,seen:1,spots:[spotOf(at)],pics:shots.length};
  if(status==='Perdu'){
   const n=$('#f-name').value.trim(),c=$('#f-contact').value.trim();
@@ -1157,7 +1261,7 @@ $('#m-yes').onclick=async()=>{
  }catch{toast('Impossible pour le moment')}};
 $('#m-no').onclick=()=>{$('#sh-match').classList.remove('on');addCat()};
 
-function resetCat(){shots=[];color=status=null;pending=null;
+function resetCat(){shots=[];color=status=null;pending=null;alImg=null;alS=1;alX=0;alY=0;
  $('#f-name').value='';$('#f-contact').value='';$('#f-note').value='';
  document.querySelectorAll('.col,#v-add .st').forEach(b=>b.classList.remove('on'));
  $('#n2').disabled=true;$('#n3').disabled=true;
@@ -1287,6 +1391,12 @@ function updateBadge(){
  const old=btn.querySelector('.nbadge');if(old)old.remove();
  const n=nearLost().length;
  if(n){const b=document.createElement('span');b.className='nbadge';b.textContent=n;btn.appendChild(b)}
+ /* pastille admin : les signalements à traiter, visibles dès l'ouverture */
+ const mb=document.querySelector('nav button[data-v="me"]');
+ const om=mb.querySelector('.nbadge');if(om)om.remove();
+ if(isAdmin()){
+  const f=pendingFlags().length;
+  if(f){const b=document.createElement('span');b.className='nbadge';b.textContent=f;mb.appendChild(b)}}
 }
 function drawList(){
  const al=nearLost().length;
@@ -1360,6 +1470,18 @@ function drawMe(){
    <p>Ensemble, vous avez recensé <b>${cats.length} chat${cats.length>1?'s':''}</b>
     et <b>${places.length} lieu${places.length>1?'x':''}</b>.
     Chaque observation resserre les zones et rend la carte plus utile à tout le monde.</p></div>
+  ${isAdmin()?`<div class="panel" style="border:1.5px solid var(--danger)">
+    <h4>Espace admin${pendingFlags().length?` · <span style="color:var(--danger)">${pendingFlags().length} en attente</span>`:''}</h4>
+    ${pendingFlags().length?`<p>Fiches signalées par des utilisateurs, les plus signalées d'abord.</p>
+      <div class="list" style="margin-top:12px">${pendingFlags().map(x=>`
+       <div class="item" data-fid="${x.id}" data-fkind="${x.kind}">
+        <div class="dot" style="background:var(--danger-soft);color:var(--danger)">
+         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round"><use href="#i-flag"/></svg></div>
+        <div class="txt"><b>${esc(x.label)}</b><small>${x.flags} signalement${x.flags>1?'s':''} · ${x.kind==='cats'?'chat':'lieu'}</small></div>
+       </div>`).join('')}</div>`
+     :`<p>Aucun signalement en attente. Cette liste se remplit quand des utilisateurs signalent une fiche.</p>`}
+    </div>`:''}
   <div class="panel"><h4>Ton compte</h4>
    ${named()?`<div class="acct"><span class="ai">${esc((me.name||user.email||'?').trim()[0]||'?').toUpperCase()}</span>
      <div><b>${esc(me.name||'Compte connecté')}</b><small>${esc(user.email||'Connecté avec Google')}</small></div></div>
@@ -1369,6 +1491,9 @@ function drawMe(){
      ni supprimer tes signalements. Un compte règle les deux, et garde tout ce que tu as déjà ajouté.</p>
     <button class="go" id="me-account" style="margin-top:12px">Créer un compte</button>`}
    <p style="margin-top:12px"><a href="#" id="me-legal">Vie privée et données →</a></p></div>`;
+ document.querySelectorAll('[data-fid]').forEach(el=>el.onclick=()=>{
+  const kind=el.dataset.fkind,id=el.dataset.fid;
+  if(kind==='cats')detail(id);else placeDetail(id)});
  $('#me-legal').onclick=e=>{e.preventDefault();$('#sh-legal').classList.add('on')};
  const ma=$('#me-account');if(ma)ma.onclick=()=>$('#sh-account').classList.add('on');
  const ms=$('#me-settings');if(ms)ms.onclick=()=>{
@@ -1431,8 +1556,16 @@ function detail(id){
 /* seul l'auteur voit ces boutons — et les règles Firestore le vérifient côté serveur */
 function ownBtn(box,kind,x,id,label){
  const mine=uid()&&x.uid===uid();
- box.innerHTML=mine?`<button class="del">Supprimer ce signalement</button>`:'';
- if(mine)box.querySelector('.del').onclick=()=>{
+ box.innerHTML=(mine||isAdmin())?`<button class="del">Supprimer ce signalement</button>`:'';
+ if(isAdmin()&&x.flags)box.insertAdjacentHTML('afterbegin',
+  `<button class="clear">Signalement injustifié — rétablir</button>`);
+ const cl=box.querySelector('.clear');
+ if(cl)cl.onclick=async()=>{
+  try{await updateDoc(doc(db,kind,id),{flags:0});
+   $('#sh-det').classList.remove('on');$('#sh-place').classList.remove('on');
+   toast('Fiche rétablie')}catch{toast('Impossible pour le moment')}};
+ const db_=box.querySelector('.del');
+ if(db_)db_.onclick=()=>{
   $('#cf-title').textContent='Supprimer ?';
   $('#cf-text').textContent=`« ${label} » disparaîtra de la carte pour tout le monde. C'est définitif.`;
   $('#cf-yes').textContent='Supprimer';

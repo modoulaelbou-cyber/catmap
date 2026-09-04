@@ -163,3 +163,25 @@ L'app est utilisée dehors, à une main, souvent au soleil. Cibles tactiles larg
 ## Déploiement
 
 GitHub → Netlify, déploiement automatique à chaque push. Pas de build command, dossier de publication à la racine. HTTPS obligatoire : sans lui, ni la caméra ni le GPS ne fonctionnent.
+
+## Admin et modération
+
+L'admin est identifié par son **e-mail Google vérifié** (`modoula.elbou@hotmail.com`),
+dans les règles Firestore ET dans l'app (`isAdmin()`). La condition
+`email_verified == true` est indispensable : sans elle, n'importe qui pourrait
+s'inscrire en e-mail/mot de passe avec cette adresse et devenir admin, Firebase
+ne vérifiant pas l'adresse à l'inscription. L'admin doit donc se connecter avec
+Google. Pour changer d'administrateur, modifier l'adresse aux deux endroits.
+
+**Pas de notification par e-mail ou push pour les signalements** : cela exige
+Cloud Functions, donc le plan Blaze payant. À la place, l'onglet « Moi » affiche
+un espace admin listant les fiches signalées, avec une pastille rouge sur
+l'onglet. Ne pas promettre de notification tant qu'on est sur Spark.
+
+## Croquis de chat sur la carte
+
+Le champ `mask` d'une fiche est la vignette carrée (96 px, ~1 Ko) cadrée par
+l'utilisateur à l'étape « Cadre sa tête ». La carte la découpe en silhouette de
+chat via un `clipPath` SVG : le marqueur montre donc la vraie photo, pas une
+approximation. Les fiches sans `mask` (anciennes) retombent sur le croquis rempli
+de la couleur choisie — garder ce repli.
