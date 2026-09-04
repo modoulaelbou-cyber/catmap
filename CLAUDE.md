@@ -104,19 +104,32 @@ le plan payant Blaze avec carte bancaire ; Firestore reste gratuit sur Spark.
 Une photo compressée tient largement sous la limite de 1 Mo par document. À
 revoir seulement si les photos deviennent nettement plus lourdes.
 
-**Pas de comptes utilisateurs pour l'instant.** L'app ne demande ni e-mail ni mot
-de passe, ce qui supprime toute friction à l'entrée. En contrepartie personne ne
-peut modifier ou supprimer sa propre fiche, et il n'y a aucune modération. C'est
-le prochain arbitrage à faire si l'usage décolle (Firebase Auth anonyme donnerait
-une identité stable sans friction).
+**Comptes : anonyme d'abord, rattachement ensuite.** Firebase Auth ouvre une
+session **anonyme** dès le lancement — personne n'est jamais bloqué à l'entrée.
+Créer un vrai compte se fait en **rattachant** cette session (`linkWithPopup` /
+`linkWithCredential`), ce qui conserve le même `uid` : progression et
+signalements déjà faits restent attachés à la même personne. Ne jamais remplacer
+ce rattachement par un `signIn` simple, qui créerait un nouvel `uid` et
+détacherait tout.
 
-**La progression (XP, niveaux, objectifs) est locale à l'appareil**, dans
-`localStorage` sous `catmap.me.v1`. C'est une conséquence directe de l'absence de
-comptes, pas un oubli : il ne peut donc pas y avoir de classement entre
-utilisateurs. L'interface le dit explicitement dans l'onglet « Moi » plutôt que de
-laisser croire à une compétition. Le seul chiffre réellement collectif est le
-compteur du quartier, calculé depuis Firestore. Ne pas ajouter de classement sans
-ajouter d'abord une vraie authentification.
+Fournisseurs activés : **Google**, **e-mail/mot de passe**, **anonyme**.
+**Apple est impossible** sans l'Apple Developer Program (99 €/an) : Firebase
+réclame un « ID de service » qui ne se crée que dans la console développeur
+Apple. L'écran de compte le dit explicitement.
+
+Le « nettoyage automatique » des comptes anonymes est **volontairement désactivé**
+dans la console : il supprimerait après 30 jours d'inactivité les comptes de gens
+qui n'ont pas encore créé de vrai compte, avec leur progression.
+
+Chaque `cats` et `places` porte un `uid`. Les règles laissent l'auteur modifier et
+supprimer sa fiche, et n'autorisent aux autres que la contribution (`seen`,
+`spots`, `flags`, `ok`, `last`, `status`). Les fiches créées avant les comptes
+n'ont pas d'`uid` : elles restent contribuables mais personne ne peut les
+supprimer.
+
+**La progression vit dans `users/{uid}`**, avec `localStorage` (`catmap.me.v1`)
+comme simple cache d'affichage au lancement. Le document serveur fait foi : il
+peut venir d'un autre appareil.
 
 **Pas d'IA de reconnaissance de couleur ou de race.** La sélection manuelle suffit
 et produit de meilleures données au départ.

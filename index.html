@@ -374,6 +374,7 @@ nav button:active{transform:scale(.94)}
 .act button:active{transform:scale(.975)}
 .act .seen{background:var(--brand);color:var(--brand-ink);border-color:transparent}
 .act .found{background:var(--ok);color:#fff;border-color:transparent}
+.act .del{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 35%,transparent)}
 .contact{display:flex;gap:12px;align-items:center;background:var(--danger-soft);
  border-radius:var(--r);padding:14px;margin-bottom:14px}
 .contact .ci{width:38px;height:38px;border-radius:12px;background:var(--danger);color:var(--danger-ink);
@@ -398,6 +399,21 @@ nav button:active{transform:scale(.94)}
 .pick .pi svg{width:21px;height:21px}
 .pick b{display:block;font-size:15.5px;font-weight:690}
 .pick small{display:block;font-size:12.5px;color:var(--ink-3);margin-top:1px}
+.gbtn{width:100%;display:flex;align-items:center;justify-content:center;gap:11px;padding:16px;
+ border:1px solid var(--line);border-radius:var(--r);background:var(--surface);
+ font-size:15.5px;font-weight:680;transition:transform .14s}
+.gbtn:active{transform:scale(.975)}
+.gbtn svg{width:20px;height:20px}
+.sep{display:flex;align-items:center;gap:12px;margin:18px 0 14px;color:var(--ink-3);font-size:12px}
+.sep::before,.sep::after{content:'';flex:1;height:1px;background:var(--line)}
+.acct{display:flex;align-items:center;gap:13px;background:var(--surface-2);border-radius:var(--r);
+ padding:14px;margin-bottom:4px}
+.acct .ai{width:42px;height:42px;border-radius:50%;background:var(--brand);color:var(--brand-ink);
+ display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:17px;font-weight:800}
+.acct b{display:block;font-size:15px;font-weight:700}
+.acct small{display:block;font-size:12.5px;color:var(--ink-2);margin-top:1px;word-break:break-all}
+.mine{display:inline-block;font-size:10.5px;font-weight:750;color:var(--brand);
+ background:var(--brand-soft);padding:3px 8px;border-radius:100px;margin-left:6px;vertical-align:2px}
 .reasons{display:grid;gap:9px}
 .reasons button{text-align:left;padding:15px;border:1px solid var(--line);border-radius:var(--r);
  background:var(--surface);font-size:14.5px;font-weight:650;transition:transform .14s}
@@ -700,6 +716,47 @@ nav button:active{transform:scale(.94)}
   <button class="ghost" id="report-cancel" style="margin-top:12px">Annuler</button>
 </div></div>
 
+<div class="sheet" id="sh-account"><div class="card">
+  <div class="grab"></div>
+  <h2>Créer un compte</h2>
+  <p>Un compte te permet de <b>modifier et supprimer tes signalements</b>, et de retrouver ta progression sur tous tes appareils. Tout ce que tu as déjà ajouté est conservé.</p>
+  <button class="gbtn" id="a-google">
+    <svg viewBox="0 0 48 48"><path fill="#4285F4" d="M45 24.5c0-1.6-.1-2.8-.4-4H24v7.4h12c-.2 2-1.5 5-4.4 7l6.7 5.2c4-3.7 6.7-9.1 6.7-15.6z"/><path fill="#34A853" d="M24 46c5.9 0 10.9-2 14.5-5.3l-6.9-5.4c-1.9 1.3-4.4 2.2-7.6 2.2-5.8 0-10.7-3.8-12.5-9.1l-7.1 5.5C8.1 41 15.5 46 24 46z"/><path fill="#FBBC05" d="M11.5 28.4c-.5-1.4-.7-2.9-.7-4.4s.3-3 .7-4.4l-7.1-5.5C2.9 17 2 20.4 2 24s.9 7 2.4 9.9z"/><path fill="#EA4335" d="M24 10.6c3.2 0 6 1.1 8.2 3.2l6.1-6.1C34.9 4.2 29.9 2 24 2 15.5 2 8.1 7 4.4 14.1l7.1 5.5c1.8-5.3 6.7-9 12.5-9z"/></svg>
+    Continuer avec Google</button>
+  <div class="sep"><span>ou avec une adresse e-mail</span></div>
+  <div class="fld"><input type="email" id="a-mail" placeholder="ton@email.fr" autocomplete="email"></div>
+  <div class="fld"><input type="password" id="a-pass" placeholder="Mot de passe (6 caractères min.)" autocomplete="current-password"></div>
+  <div class="two"><button class="y" id="a-signup">Créer un compte</button>
+    <button id="a-signin">J'ai déjà un compte</button></div>
+  <p style="text-align:center;margin:14px 0 0;font-size:12.5px">
+    <a href="#" id="a-reset" style="color:var(--brand);font-weight:650;text-decoration:none">Mot de passe oublié ?</a></p>
+  <div class="note" style="margin-top:14px"><svg><use href="#i-info"/></svg>
+    <span>« Se connecter avec Apple » n'est pas disponible : Apple le réserve aux comptes développeur payants.</span></div>
+  <button class="ghost" id="account-close" style="margin-top:12px">Plus tard</button>
+</div></div>
+
+<div class="sheet" id="sh-settings"><div class="card">
+  <div class="grab"></div>
+  <h2>Ton compte</h2>
+  <div id="s-info"></div>
+  <div class="fld" style="margin-top:14px"><label for="s-name">Ton nom affiché</label>
+    <input type="text" id="s-name" maxlength="40" placeholder="Comment tu veux qu'on t'appelle" autocomplete="off"></div>
+  <button class="go" id="s-name-save" style="margin-top:0">Enregistrer</button>
+  <div class="act">
+    <button id="s-signout">Se déconnecter</button>
+    <button id="s-delete" style="color:var(--danger)">Supprimer mon compte</button>
+  </div>
+  <button class="ghost" id="settings-close" style="margin-top:12px">Fermer</button>
+</div></div>
+
+<div class="sheet" id="sh-confirm"><div class="card">
+  <div class="grab"></div>
+  <h2 id="cf-title"></h2>
+  <p id="cf-text"></p>
+  <div class="two"><button id="cf-no">Annuler</button>
+    <button class="y" id="cf-yes" style="background:var(--danger)"></button></div>
+</div></div>
+
 <div class="sheet" id="sh-legal"><div class="card">
   <div class="grab"></div>
   <h2>Vie privée et données</h2>
@@ -732,6 +789,7 @@ nav button:active{transform:scale(.94)}
     <div><small id="d-contact-lbl"></small><span id="d-contact-val"></span></div></div>
   <div id="d-rows"></div>
   <div class="act" id="d-act"></div>
+  <div class="act" id="d-own"></div>
   <button class="danger-btn" id="d-report"><svg style="display:inline;vertical-align:-3px;width:15px;height:15px;stroke-width:2" viewBox="0 0 24 24" fill="none" stroke="currentColor"><use href="#i-flag"/></svg> Signaler un problème</button>
   <button class="ghost" id="d-close" style="margin-top:9px">Fermer</button>
 </div></div>
@@ -743,6 +801,7 @@ nav button:active{transform:scale(.94)}
   <p id="q-note"></p>
   <div id="q-rows"></div>
   <div class="act" id="q-act"></div>
+  <div class="act" id="q-own"></div>
   <button class="danger-btn" id="q-report"><svg style="display:inline;vertical-align:-3px;width:15px;height:15px;stroke-width:2" viewBox="0 0 24 24" fill="none" stroke="currentColor"><use href="#i-flag"/></svg> Signaler un problème</button>
   <button class="ghost" id="q-close" style="margin-top:9px">Fermer</button>
 </div></div>
@@ -752,8 +811,14 @@ nav button:active{transform:scale(.94)}
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-app.js";
 import {
  initializeFirestore, persistentLocalCache, persistentSingleTabManager,
- collection, doc, setDoc, getDoc, updateDoc, onSnapshot, increment
+ collection, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot, increment
 } from "https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore.js";
+import {
+ getAuth, onAuthStateChanged, signInAnonymously, signOut, deleteUser,
+ GoogleAuthProvider, signInWithPopup, linkWithPopup,
+ createUserWithEmailAndPassword, signInWithEmailAndPassword,
+ EmailAuthProvider, linkWithCredential, updateProfile, sendPasswordResetEmail
+} from "https://www.gstatic.com/firebasejs/12.18.0/firebase-auth.js";
 
 const firebaseConfig={
  apiKey:"AIzaSyB9USMOwqfG7zj1RPe3amngbT7VDu_L0KI",
@@ -766,6 +831,10 @@ const firebaseConfig={
 const app=initializeApp(firebaseConfig);
 const db=initializeFirestore(app,{localCache:persistentLocalCache({tabManager:persistentSingleTabManager()})});
 const catsCol=collection(db,'cats'),placesCol=collection(db,'places');
+const auth=getAuth(app);
+let user=null;              /* toujours connecté : anonyme par défaut */
+const uid=()=>user?user.uid:null;
+const named=()=>!!(user&&!user.isAnonymous);
 
 const COLORS={Gris:'#9b9b9b',Roux:'#d2691e',Noir:'#2c2c2c',Blanc:'#e8e6e1',Tigré:'#8b6f47',Bicolore:'#6b6b6b'};
 const LIGHT=['Blanc'];
@@ -791,9 +860,16 @@ const LEVELS=[
  {min:0,n:'Curieux'},{min:120,n:'Observateur'},{min:350,n:'Éclaireur'},
  {min:800,n:'Pisteur'},{min:1600,n:'Gardien du quartier'},{min:3200,n:'Légende féline'}];
 const GAIN={cat:25,obs:10,place:15,confirm:5,found:50,report:0};
-let me={xp:0,cats:0,obs:0,places:0};
+let me={xp:0,cats:0,obs:0,places:0,name:''};
 try{me=Object.assign(me,JSON.parse(localStorage.getItem(XP_KEY)||'{}'))}catch{}
-const saveMe=()=>{try{localStorage.setItem(XP_KEY,JSON.stringify(me))}catch{}};
+/* la progression vit dans users/{uid} dès qu'on a un compte — le localStorage
+   ne sert plus que de cache pour l'affichage immédiat au lancement */
+function saveMe(){
+ try{localStorage.setItem(XP_KEY,JSON.stringify(me))}catch{}
+ if(uid())setDoc(doc(db,'users',uid()),
+  {xp:me.xp,cats:me.cats,obs:me.obs,places:me.places,name:me.name||''},
+  {merge:true}).catch(()=>{});
+}
 const levelOf=xp=>LEVELS.reduce((a,l)=>xp>=l.min?l:a,LEVELS[0]);
 const nextOf=xp=>LEVELS.find(l=>l.min>xp)||null;
 function award(kind){
@@ -1051,7 +1127,7 @@ async function pushPics(id,arr){
 
 async function addCat(){
  const at=picked('pickmap-cat'),ref=doc(catsCol),now=new Date().toISOString();
- const data={color,status,thumb:shots[0].thumb,lat:at.lat,lng:at.lng,
+ const data={color,status,thumb:shots[0].thumb,lat:at.lat,lng:at.lng,uid:uid(),
   first:now,last:now,seen:1,spots:[spotOf(at)],pics:shots.length};
  if(status==='Perdu'){
   const n=$('#f-name').value.trim(),c=$('#f-contact').value.trim();
@@ -1097,7 +1173,7 @@ $('#p-go').onclick=async()=>{
  const at=picked('pickmap-place');
  if(!at){toast('Position requise — autorise le GPS');geo();return}
  const ref=doc(placesCol),now=new Date().toISOString();
- const data={type:ptype,lat:at.lat,lng:at.lng,first:now,last:now,ok:1};
+ const data={type:ptype,lat:at.lat,lng:at.lng,uid:uid(),first:now,last:now,ok:1};
  const note=$('#p-note').value.trim();
  if(note)data.note=note;
  if(pshots.length)data.pics=pshots.length;
@@ -1284,11 +1360,22 @@ function drawMe(){
    <p>Ensemble, vous avez recensé <b>${cats.length} chat${cats.length>1?'s':''}</b>
     et <b>${places.length} lieu${places.length>1?'x':''}</b>.
     Chaque observation resserre les zones et rend la carte plus utile à tout le monde.</p></div>
-  <div class="panel"><h4>Tes points</h4>
-   <p>L'app ne demande aucun compte : ta progression est gardée sur ce téléphone et n'est
-    comparée à personne. Elle est là pour suivre ta contribution, pas pour te classer.
-    <a href="#" id="me-legal">Vie privée et données →</a></p></div>`;
+  <div class="panel"><h4>Ton compte</h4>
+   ${named()?`<div class="acct"><span class="ai">${esc((me.name||user.email||'?').trim()[0]||'?').toUpperCase()}</span>
+     <div><b>${esc(me.name||'Compte connecté')}</b><small>${esc(user.email||'Connecté avec Google')}</small></div></div>
+    <p style="margin-top:12px">Tes signalements sont à toi : tu peux les modifier ou les supprimer depuis leur fiche.</p>
+    <button class="ghost" id="me-settings" style="margin-top:12px">Gérer mon compte</button>`
+   :`<p>Sans compte, ta progression reste sur ce téléphone et tu ne peux pas modifier
+     ni supprimer tes signalements. Un compte règle les deux, et garde tout ce que tu as déjà ajouté.</p>
+    <button class="go" id="me-account" style="margin-top:12px">Créer un compte</button>`}
+   <p style="margin-top:12px"><a href="#" id="me-legal">Vie privée et données →</a></p></div>`;
  $('#me-legal').onclick=e=>{e.preventDefault();$('#sh-legal').classList.add('on')};
+ const ma=$('#me-account');if(ma)ma.onclick=()=>$('#sh-account').classList.add('on');
+ const ms=$('#me-settings');if(ms)ms.onclick=()=>{
+  $('#s-name').value=me.name||'';
+  $('#s-info').innerHTML=`<div class="acct"><span class="ai">${esc((me.name||user.email||'?').trim()[0]||'?').toUpperCase()}</span>
+   <div><b>${esc(me.name||'Compte connecté')}</b><small>${esc(user.email||'Connecté avec Google')}</small></div></div>`;
+  $('#sh-settings').classList.add('on')};
 }
 
 /* ---------- galerie ---------- */
@@ -1338,7 +1425,20 @@ function detail(id){
   act.querySelector('.seen').onclick=()=>markSeen(id);
   const f=act.querySelector('.found');if(f)f.onclick=()=>markFound(id);
  }
+ ownBtn($('#d-own'),'cats',k,id,k.name||k.color);
  $('#sh-det').classList.add('on')}
+
+/* seul l'auteur voit ces boutons — et les règles Firestore le vérifient côté serveur */
+function ownBtn(box,kind,x,id,label){
+ const mine=uid()&&x.uid===uid();
+ box.innerHTML=mine?`<button class="del">Supprimer ce signalement</button>`:'';
+ if(mine)box.querySelector('.del').onclick=()=>{
+  $('#cf-title').textContent='Supprimer ?';
+  $('#cf-text').textContent=`« ${label} » disparaîtra de la carte pour tout le monde. C'est définitif.`;
+  $('#cf-yes').textContent='Supprimer';
+  confirmAction=()=>deleteOwn(kind,id,x.pics);
+  $('#sh-confirm').classList.add('on')};
+}
 
 async function markSeen(id){
  if(!pos){toast('Position requise — autorise le GPS');geo();return}
@@ -1375,6 +1475,7 @@ function placeDetail(id){
   try{await updateDoc(doc(db,'places',id),{ok:increment(1),last:new Date().toISOString()});
    $('#sh-place').classList.remove('on');celebrate('Merci pour la confirmation',award('confirm'));
   }catch{toast('Impossible pour le moment')}};
+ ownBtn($('#q-own'),'places',q,id,PLBL[q.type]||q.type);
  $('#sh-place').classList.add('on')}
 
 /* ---------- signalement ----------
@@ -1405,6 +1506,132 @@ $('#intro-go').onclick=()=>{
  try{localStorage.setItem(INTRO,'1')}catch{}
  $('#intro').classList.remove('on')};
 $('#intro-legal').onclick=e=>{e.preventDefault();$('#sh-legal').classList.add('on')};
+
+/* ---------- comptes ----------
+   Personne n'est jamais bloqué à l'entrée : on ouvre une session anonyme dès
+   le lancement, et créer un vrai compte se fait en RATTACHANT cette session
+   (linkWith…). Les chats déjà signalés et les points restent donc attachés à
+   la même personne, sans migration ni perte. */
+onAuthStateChanged(auth,async u=>{
+ user=u;
+ if(!u){signInAnonymously(auth).catch(()=>toast('Connexion impossible'));return}
+ try{
+  const snap=await getDoc(doc(db,'users',u.uid));
+  if(snap.exists()){
+   const d=snap.data();
+   /* le compte fait foi : il peut venir d'un autre appareil */
+   me={xp:d.xp||0,cats:d.cats||0,obs:d.obs||0,places:d.places||0,name:d.name||''};
+   try{localStorage.setItem(XP_KEY,JSON.stringify(me))}catch{}
+  }else{
+   await setDoc(doc(db,'users',u.uid),{xp:me.xp,cats:me.cats,obs:me.obs,
+    places:me.places,name:me.name||'',since:new Date().toISOString()},{merge:true});
+  }
+ }catch{}
+ paintLevel();
+ if(view==='me')drawMe();
+ if(view==='map')drawMap();
+});
+
+const authErr=e=>({
+ 'auth/email-already-in-use':'Cette adresse a déjà un compte.',
+ 'auth/invalid-email':'Adresse e-mail invalide.',
+ 'auth/weak-password':'Mot de passe trop court (6 caractères minimum).',
+ 'auth/wrong-password':'Mot de passe incorrect.',
+ 'auth/invalid-credential':'Adresse ou mot de passe incorrect.',
+ 'auth/user-not-found':'Aucun compte avec cette adresse.',
+ 'auth/popup-closed-by-user':'Connexion annulée.',
+ 'auth/credential-already-in-use':'Ce compte est déjà utilisé. Connecte-toi plutôt.',
+ 'auth/requires-recent-login':'Reconnecte-toi puis réessaie.'
+}[e.code]||'Impossible pour le moment.');
+
+async function withGoogle(){
+ const p=new GoogleAuthProvider();
+ try{
+  /* rattacher garde la progression ; si le compte Google existe déjà, on bascule dessus */
+  if(user&&user.isAnonymous)await linkWithPopup(user,p);
+  else await signInWithPopup(auth,p);
+  $('#sh-account').classList.remove('on');celebrate('Compte connecté');
+ }catch(e){
+  if(e.code==='auth/credential-already-in-use'||e.code==='auth/email-already-in-use'){
+   try{await signInWithPopup(auth,p);$('#sh-account').classList.remove('on');
+    celebrate('Compte connecté');return}catch{}
+  }
+  toast(authErr(e));
+ }
+}
+async function withEmail(mode){
+ const em=$('#a-mail').value.trim(),pw=$('#a-pass').value;
+ if(!em||pw.length<6){toast('Adresse et mot de passe (6 caractères min.) requis');return}
+ try{
+  if(mode==='up'&&user&&user.isAnonymous)
+   await linkWithCredential(user,EmailAuthProvider.credential(em,pw));
+  else if(mode==='up')await createUserWithEmailAndPassword(auth,em,pw);
+  else await signInWithEmailAndPassword(auth,em,pw);
+  $('#a-mail').value='';$('#a-pass').value='';
+  $('#sh-account').classList.remove('on');celebrate('Compte connecté');
+ }catch(e){toast(authErr(e))}
+}
+$('#a-google').onclick=withGoogle;
+$('#a-signup').onclick=()=>withEmail('up');
+$('#a-signin').onclick=()=>withEmail('in');
+$('#a-reset').onclick=async e=>{
+ e.preventDefault();
+ const em=$('#a-mail').value.trim();
+ if(!em){toast('Saisis ton adresse e-mail d\'abord');return}
+ try{await sendPasswordResetEmail(auth,em);toast('E-mail de réinitialisation envoyé')}
+ catch(x){toast(authErr(x))}};
+$('#account-close').onclick=()=>$('#sh-account').classList.remove('on');
+
+async function doSignOut(){
+ try{await signOut(auth);
+  me={xp:0,cats:0,obs:0,places:0,name:''};
+  try{localStorage.removeItem(XP_KEY)}catch{}
+  paintLevel();$('#sh-settings').classList.remove('on');go('map');
+  toast('Déconnecté — une session anonyme a repris');
+ }catch{toast('Impossible pour le moment')}
+}
+async function doDeleteAccount(){
+ if(!user)return;
+ try{
+  await deleteDoc(doc(db,'users',user.uid)).catch(()=>{});
+  await deleteUser(user);
+  me={xp:0,cats:0,obs:0,places:0,name:''};
+  try{localStorage.removeItem(XP_KEY)}catch{}
+  $('#sh-confirm').classList.remove('on');$('#sh-settings').classList.remove('on');
+  paintLevel();go('map');toast('Compte supprimé');
+ }catch(e){toast(authErr(e))}
+}
+async function saveName(){
+ const n=$('#s-name').value.trim().slice(0,40);
+ me.name=n;saveMe();
+ if(user&&named())updateProfile(user,{displayName:n}).catch(()=>{});
+ toast('Nom enregistré');if(view==='me')drawMe();
+}
+$('#s-name-save').onclick=saveName;
+$('#s-signout').onclick=doSignOut;
+$('#s-delete').onclick=()=>{
+ $('#cf-title').textContent='Supprimer ton compte ?';
+ $('#cf-text').textContent="Ta progression et ton profil seront effacés définitivement. Les chats et lieux que tu as ajoutés resteront sur la carte, car le quartier s'appuie dessus.";
+ $('#cf-yes').textContent='Supprimer mon compte';
+ confirmAction=doDeleteAccount;
+ $('#sh-confirm').classList.add('on')};
+$('#settings-close').onclick=()=>$('#sh-settings').classList.remove('on');
+
+let confirmAction=null;
+$('#cf-yes').onclick=()=>{if(confirmAction)confirmAction()};
+$('#cf-no').onclick=()=>$('#sh-confirm').classList.remove('on');
+
+/* suppression d'une fiche : réservée à son auteur par les règles Firestore */
+async function deleteOwn(kind,id,pics){
+ try{
+  for(let i=0;i<Math.max(1,pics||1);i++)
+   await deleteDoc(doc(db,'photos',picId(id,i))).catch(()=>{});
+  await deleteDoc(doc(db,kind,id));
+  $('#sh-confirm').classList.remove('on');
+  $('#sh-det').classList.remove('on');$('#sh-place').classList.remove('on');
+  toast('Supprimé');
+ }catch{toast("Suppression impossible — tu n'es pas l'auteur de cette fiche")}
+}
 
 paintLevel();
 /* la carte est la vue d'accueil : on la monte tout de suite, sans attendre
