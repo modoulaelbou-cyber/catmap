@@ -70,9 +70,15 @@ Collection `places` — lieux utiles, indépendants des chats :
 }
 ```
 
-Collection `photos` — un document par chat, même id que la fiche, chargé
-seulement à l'ouverture d'une fiche : `{ data: 'data:image/jpeg;base64,...' }`
-(photo 900px, ~250 Ko).
+Collection `photos` — une photo par document, chargée seulement à l'ouverture
+d'une fiche : `{ data: 'data:image/jpeg;base64,...' }` (photo 900px, ~250 Ko).
+La première photo d'un chat ou d'un lieu porte l'id de la fiche, les suivantes
+`{id}-2`, `{id}-3`… (4 maximum, champ `pics` sur la fiche). Ces ids prévisibles
+évitent une requête indexée : on sait quoi charger sans interroger la collection.
+
+Le champ `flags` compte les signalements. À 3, l'app masque les photos de la
+fiche et la grise sur la carte. Sans comptes ni modérateur, ce seuil collectif
+est le seul garde-fou possible — ne pas le retirer sans le remplacer.
 
 Cette séparation est le point important : la fiche doit rester légère parce que
 l'app télécharge toutes les fiches à chaque ouverture. Avant la séparation, une
@@ -120,9 +126,11 @@ et produit de meilleures données au départ.
 1. Comptes anonymes (Firebase Auth) — permettrait de modifier et supprimer ses
    propres signalements, et de limiter le spam
 2. Vraies notifications push quand un chat est signalé perdu à proximité —
-   aujourd'hui l'alerte est seulement visible à l'ouverture de l'app (bannière +
-   pastille sur l'onglet Chats). Le push web est trop faible sur iOS, ce qui
-   pousse vers une version native
+   aujourd'hui il y a un résumé au lancement (ce qui a été ajouté dans un rayon
+   de 2 km depuis la dernière visite, via `catmap.lastopen.v1`), une bannière et
+   une pastille sur l'onglet. Le push web est trop faible sur iOS, ce qui pousse
+   vers une version native. Ne pas présenter le résumé comme une notification :
+   il n'arrive que quand l'utilisateur ouvre l'app
 3. Signalement des doublons et modération légère
 4. Ne charger que les chats proches — aujourd'hui l'app charge toutes les fiches.
    Léger tant qu'elles pèsent 1 Ko, à revoir vers quelques milliers de chats
