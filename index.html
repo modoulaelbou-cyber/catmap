@@ -28,6 +28,7 @@
  --ok:#15803d; --ok-soft:#e6f4ea;
  --gold:#b7791f; --gold-soft:#fdf3e0;
  --water:#0a6fb5; --water-soft:#e4f2fb;
+ --admin:#0f766e; --admin-ink:#fff; --admin-soft:#dff2f0;
  --shadow:0 1px 2px rgba(26,23,20,.05),0 10px 28px rgba(26,23,20,.07);
  --shadow-lg:0 20px 50px rgba(26,23,20,.16);
  --r:16px; --r-lg:22px; --r-xl:28px;
@@ -42,6 +43,7 @@
  --ok:#5ddb92; --ok-soft:#16301f;
  --gold:#e3b95f; --gold-soft:#33270f;
  --water:#6cb6e8; --water-soft:#11283a;
+ --admin:#5eead4; --admin-ink:#08302c; --admin-soft:#12332f;
  --shadow:0 1px 2px rgba(0,0,0,.5),0 10px 28px rgba(0,0,0,.4);
  --shadow-lg:0 20px 50px rgba(0,0,0,.6);
 }
@@ -381,7 +383,6 @@ nav button:active{transform:scale(.94)}
 .act button:active{transform:scale(.975)}
 .act .seen{background:var(--brand);color:var(--brand-ink);border-color:transparent}
 .act .found{background:var(--ok);color:#fff;border-color:transparent}
-.act .clear{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 35%,transparent)}
 .act .del{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 35%,transparent)}
 .contact{display:flex;gap:12px;align-items:center;background:var(--danger-soft);
  border-radius:var(--r);padding:14px;margin-bottom:14px}
@@ -414,6 +415,14 @@ nav button:active{transform:scale(.94)}
 .gbtn svg{width:20px;height:20px}
 .sep{display:flex;align-items:center;gap:12px;margin:18px 0 14px;color:var(--ink-3);font-size:12px}
 .sep::before,.sep::after{content:'';flex:1;height:1px;background:var(--line)}
+nav .nbadge.admin{background:var(--admin);color:var(--admin-ink)}
+.admin-panel{border:1.5px solid color-mix(in srgb,var(--admin) 45%,transparent);
+ background:linear-gradient(var(--admin-soft),var(--surface) 55%)}
+.admin-panel h4{display:flex;align-items:center;gap:8px}
+.admin-chip{font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;
+ background:var(--admin);color:var(--admin-ink);padding:3px 8px;border-radius:100px}
+.admin-panel .item:active{background:var(--admin-soft)}
+.act .clear{color:var(--admin);border-color:color-mix(in srgb,var(--admin) 35%,transparent)}
 .bell{position:relative;width:34px;height:34px;border-radius:50%;border:0;background:var(--surface-2);
  color:var(--ink-2);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .14s}
 .bell:active{transform:scale(.9)}
@@ -421,6 +430,7 @@ nav button:active{transform:scale(.94)}
 .bdot{position:absolute;top:1px;right:1px;min-width:16px;height:16px;border-radius:8px;
  background:var(--danger);color:var(--danger-ink);font-size:9.5px;font-weight:800;
  display:flex;align-items:center;justify-content:center;padding:0 4px;box-shadow:0 0 0 2px var(--bg)}
+.bdot[hidden]{display:none}
 .nrow{display:flex;align-items:flex-start;gap:12px;padding:14px;border-radius:var(--r);
  background:var(--surface-2);margin-bottom:9px;text-align:left;width:100%;border:0;
  transition:transform .14s}
@@ -1388,7 +1398,7 @@ function notifs(){
  const out=[];
 
  if(isAdmin())pendingFlags().forEach(f=>out.push({
-  c:'var(--danger)',i:'i-flag',fresh:true,
+  c:'var(--admin)',i:'i-flag',fresh:true,
   b:`« ${f.label} » signalé ${f.flags} fois`,
   s:'À vérifier — ouvre la fiche pour trancher',
   go:()=>f.kind==='cats'?detail(f.id):placeDetail(f.id)}));
@@ -1466,7 +1476,7 @@ function updateBadge(){
  const om=mb.querySelector('.nbadge');if(om)om.remove();
  if(isAdmin()){
   const f=pendingFlags().length;
-  if(f){const b=document.createElement('span');b.className='nbadge';b.textContent=f;mb.appendChild(b)}}
+  if(f){const b=document.createElement('span');b.className='nbadge admin';b.textContent=f;mb.appendChild(b)}}
 }
 function drawList(){
  const al=nearLost().length;
@@ -1540,12 +1550,12 @@ function drawMe(){
    <p>Ensemble, vous avez recensé <b>${cats.length} chat${cats.length>1?'s':''}</b>
     et <b>${places.length} lieu${places.length>1?'x':''}</b>.
     Chaque observation resserre les zones et rend la carte plus utile à tout le monde.</p></div>
-  ${isAdmin()?`<div class="panel" style="border:1.5px solid var(--danger)">
-    <h4>Espace admin${pendingFlags().length?` · <span style="color:var(--danger)">${pendingFlags().length} en attente</span>`:''}</h4>
+  ${isAdmin()?`<div class="panel admin-panel">
+    <h4><span class="admin-chip">Admin</span>Modération${pendingFlags().length?` · <span style="color:var(--admin)">${pendingFlags().length} en attente</span>`:''}</h4>
     ${pendingFlags().length?`<p>Fiches signalées par des utilisateurs, les plus signalées d'abord.</p>
       <div class="list" style="margin-top:12px">${pendingFlags().map(x=>`
        <div class="item" data-fid="${x.id}" data-fkind="${x.kind}">
-        <div class="dot" style="background:var(--danger-soft);color:var(--danger)">
+        <div class="dot" style="background:var(--admin-soft);color:var(--admin)">
          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round"><use href="#i-flag"/></svg></div>
         <div class="txt"><b>${esc(x.label)}</b><small>${x.flags} signalement${x.flags>1?'s':''} · ${x.kind==='cats'?'chat':'lieu'}</small></div>

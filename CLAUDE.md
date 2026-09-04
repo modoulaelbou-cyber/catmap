@@ -166,6 +166,10 @@ GitHub → Netlify, déploiement automatique à chaque push. Pas de build comman
 
 ## Admin et modération
 
+Les surfaces admin utilisent leur propre couleur (`--admin`, teal) et **jamais le
+rouge** : le rouge reste réservé aux chats perdus et aux actions destructrices.
+Un panneau de modération en rouge diluait le seul signal d'urgence de l'app.
+
 L'admin est identifié par son **e-mail Google vérifié** (`modoula.elbou@hotmail.com`),
 dans les règles Firestore ET dans l'app (`isAdmin()`). La condition
 `email_verified == true` est indispensable : sans elle, n'importe qui pourrait
