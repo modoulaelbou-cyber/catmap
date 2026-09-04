@@ -173,10 +173,13 @@ s'inscrire en e-mail/mot de passe avec cette adresse et devenir admin, Firebase
 ne vérifiant pas l'adresse à l'inscription. L'admin doit donc se connecter avec
 Google. Pour changer d'administrateur, modifier l'adresse aux deux endroits.
 
-**Pas de notification par e-mail ou push pour les signalements** : cela exige
-Cloud Functions, donc le plan Blaze payant. À la place, l'onglet « Moi » affiche
-un espace admin listant les fiches signalées, avec une pastille rouge sur
-l'onglet. Ne pas promettre de notification tant qu'on est sur Spark.
+**Aucune notification sortante — c'est un choix, pas une limite subie.** Le
+porteur ne veut pas d'e-mail : tout passe par la **section Notifications** dans
+l'app (cloche de l'en-tête, `catmap.notif.v1` mémorise la dernière lecture).
+Elle regroupe les fiches signalées à traiter (admin), les chats perdus proches,
+l'activité sur ses propres signalements, et les nouveautés du quartier. Elle
+s'ouvre seule au lancement s'il y a du neuf. E-mail et push resteraient de toute
+façon impossibles sur Spark (Cloud Functions = plan Blaze).
 
 ## Croquis de chat sur la carte
 

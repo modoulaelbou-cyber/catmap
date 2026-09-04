@@ -414,6 +414,23 @@ nav button:active{transform:scale(.94)}
 .gbtn svg{width:20px;height:20px}
 .sep{display:flex;align-items:center;gap:12px;margin:18px 0 14px;color:var(--ink-3);font-size:12px}
 .sep::before,.sep::after{content:'';flex:1;height:1px;background:var(--line)}
+.bell{position:relative;width:34px;height:34px;border-radius:50%;border:0;background:var(--surface-2);
+ color:var(--ink-2);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .14s}
+.bell:active{transform:scale(.9)}
+.bell svg{width:18px;height:18px}
+.bdot{position:absolute;top:1px;right:1px;min-width:16px;height:16px;border-radius:8px;
+ background:var(--danger);color:var(--danger-ink);font-size:9.5px;font-weight:800;
+ display:flex;align-items:center;justify-content:center;padding:0 4px;box-shadow:0 0 0 2px var(--bg)}
+.nrow{display:flex;align-items:flex-start;gap:12px;padding:14px;border-radius:var(--r);
+ background:var(--surface-2);margin-bottom:9px;text-align:left;width:100%;border:0;
+ transition:transform .14s}
+.nrow:active{transform:scale(.985)}
+.nrow.fresh{background:var(--brand-soft)}
+.nrow .ni{width:38px;height:38px;border-radius:12px;display:flex;align-items:center;
+ justify-content:center;flex-shrink:0;color:#fff}
+.nrow .ni svg{width:19px;height:19px}
+.nrow b{display:block;font-size:14.5px;font-weight:700}
+.nrow small{display:block;font-size:12.5px;color:var(--ink-2);margin-top:2px;line-height:1.4}
 .acct{display:flex;align-items:center;gap:13px;background:var(--surface-2);border-radius:var(--r);
  padding:14px;margin-bottom:4px}
 .acct .ai{width:42px;height:42px;border-radius:50%;background:var(--brand);color:var(--brand-ink);
@@ -518,6 +535,9 @@ nav button:active{transform:scale(.94)}
  <circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.4"/></symbol>
 <symbol id="i-star" viewBox="0 0 24 24" fill="currentColor">
  <path d="m12 2.9 2.9 5.9 6.5.9-4.7 4.6 1.1 6.5-5.8-3.1-5.8 3.1 1.1-6.5L2.6 9.7l6.5-.9z"/></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+ <path d="M18 8.6a6 6 0 1 0-12 0c0 6.2-2.4 8-2.4 8h16.8s-2.4-1.8-2.4-8z"/>
+ <path d="M13.7 20.4a2 2 0 0 1-3.4 0"/></symbol>
 <symbol id="i-flag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
  <path d="M5 21V4M5 4.5h11l-1.8 3.6L16 12H5"/></symbol>
 <symbol id="i-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
@@ -530,6 +550,10 @@ nav button:active{transform:scale(.94)}
 <header>
   <span class="mark"><svg><use href="#i-paw"/></svg></span>
   <b>CatMap</b>
+  <button class="bell" id="bell" aria-label="Notifications">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+      stroke-linecap="round" stroke-linejoin="round"><use href="#i-bell"/></svg>
+    <span class="bdot" id="bdot" hidden></span></button>
   <span class="lvl" id="hdr-lvl"></span>
 </header>
 <main>
@@ -718,10 +742,10 @@ nav button:active{transform:scale(.94)}
 
 <div class="sheet" id="sh-digest"><div class="card">
   <div class="grab"></div>
-  <h2 id="dg-title"></h2>
+  <h2>Notifications</h2>
   <p id="dg-sub"></p>
-  <div class="digest" id="dg-body"></div>
-  <button class="go" id="dg-close">Voir la carte</button>
+  <div id="dg-body"></div>
+  <button class="go" id="dg-close">Fermer</button>
 </div></div>
 
 <div class="sheet" id="sh-pick"><div class="card">
@@ -1348,41 +1372,87 @@ $('#locate').onclick=()=>{
  if(!pos){toast('Position requise — autorise le GPS');geo();return}
  map&&map.flyTo([pos.lat,pos.lng],16,{duration:.6})};
 
-/* ---------- résumé à l'ouverture ----------
-   Ce n'est pas une notification push (qui exigerait un serveur et passe mal
-   sur iOS) : c'est un récapitulatif de ce qui a été ajouté autour de toi
-   depuis ta dernière visite, montré au lancement. */
-const LAST='catmap.lastopen.v1',RADIUS=2000;
-let lastOpen=0,digestDone=false,loaded={cats:false,places:false};
-try{lastOpen=+(localStorage.getItem(LAST)||0)}catch{}
+/* ---------- notifications ----------
+   Tout est dans l'app : pas d'e-mail ni de push, qui exigeraient un serveur
+   (Cloud Functions, plan payant). La cloche regroupe ce qui te concerne, et
+   la section s'ouvre d'elle-même au lancement s'il y a du nouveau. */
+const LAST='catmap.notif.v1',RADIUS=2000;
+let lastSeen=0,openedOnce=false,loaded={cats:false,places:false};
+try{lastSeen=+(localStorage.getItem(LAST)||0)}catch{}
 const stamp=()=>{try{localStorage.setItem(LAST,String(Date.now()))}catch{}};
-function maybeDigest(){
- if(digestDone||!pos||!loaded.cats||!loaded.places)return;
- digestDone=true;
- if(!lastOpen){stamp();return}          /* première ouverture : rien à résumer */
- const since=new Date(lastOpen).toISOString();
+
+function notifs(){
+ if(!pos)return [];
+ const since=new Date(lastSeen||0).toISOString();
  const near=x=>dist(pos.lat,pos.lng,x.lat,x.lng)<RADIUS;
- const nc=cats.filter(k=>k.first>since&&near(k));
+ const out=[];
+
+ if(isAdmin())pendingFlags().forEach(f=>out.push({
+  c:'var(--danger)',i:'i-flag',fresh:true,
+  b:`« ${f.label} » signalé ${f.flags} fois`,
+  s:'À vérifier — ouvre la fiche pour trancher',
+  go:()=>f.kind==='cats'?detail(f.id):placeDetail(f.id)}));
+
+ cats.filter(k=>k.status==='Perdu'&&near(k)).forEach(k=>out.push({
+  c:'var(--danger)',i:'i-alert',fresh:k.first>since,
+  b:`${esc(k.name||k.color)} est perdu près de toi`,
+  s:`À ${fmt(dist(pos.lat,pos.lng,k.lat,k.lng))} — ouvre sa fiche si tu l'aperçois`,
+  go:()=>detail(k.id)}));
+
+ /* activité sur ce que tu as toi-même signalé */
+ if(uid())cats.filter(k=>k.uid===uid()&&k.seen>1&&k.last>since).forEach(k=>out.push({
+  c:'var(--ok)',i:'i-eye',fresh:true,
+  b:`${esc(k.name||k.color)} a été revu`,
+  s:`${k.seen} observations au total — sa zone se resserre`,
+  go:()=>detail(k.id)}));
+ if(uid())places.filter(p=>p.uid===uid()&&p.ok>1&&p.last>since).forEach(p=>out.push({
+  c:'var(--ok)',i:'i-check',fresh:true,
+  b:`${esc(PLBL[p.type]||p.type)} confirmé`,
+  s:`${p.ok} personnes disent que c'est toujours là`,
+  go:()=>placeDetail(p.id)}));
+
+ const nc=cats.filter(k=>k.first>since&&near(k)&&k.status!=='Perdu');
+ if(nc.length)out.push({c:'var(--brand)',i:'i-paw',fresh:true,
+  b:`${nc.length} nouveau${nc.length>1?'x':''} chat${nc.length>1?'s':''} près de toi`,
+  s:'Recensés par tes voisins',go:()=>{$('#sh-digest').classList.remove('on');go('list')}});
  const np=places.filter(p=>p.first>since&&near(p));
- const nl=nc.filter(k=>k.status==='Perdu');
- stamp();
- if(!nc.length&&!np.length)return;
- $('#dg-title').textContent='Depuis ta dernière visite';
- $('#dg-sub').textContent=`Autour de toi, dans un rayon de ${fmt(RADIUS)}.`;
- const rows=[];
- if(nc.length)rows.push({c:'var(--brand)',i:'i-paw',b:`${nc.length} nouveau${nc.length>1?'x':''} chat${nc.length>1?'s':''}`,
-  s:'Ajoutés par tes voisins'});
- if(nl.length)rows.push({c:'var(--danger)',i:'i-alert',b:`${nl.length} chat${nl.length>1?'s':''} perdu${nl.length>1?'s':''}`,
-  s:"Ouvre sa fiche si tu l'aperçois"});
- if(np.length)rows.push({c:'var(--gold)',i:'i-bowl',b:`${np.length} nouveau${np.length>1?'x':''} lieu${np.length>1?'x':''}`,
-  s:'Gamelle, eau, abri ou danger'});
- $('#dg-body').innerHTML=rows.map(r=>`<div class="dg">
-   <span class="di" style="background:${r.c}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
-     stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#${r.i}"/></svg></span>
-   <div><b>${r.b}</b><small>${r.s}</small></div></div>`).join('');
- $('#sh-digest').classList.add('on');
+ if(np.length)out.push({c:'var(--gold)',i:'i-bowl',fresh:true,
+  b:`${np.length} nouveau${np.length>1?'x':''} lieu${np.length>1?'x':''} près de toi`,
+  s:'Gamelle, eau, abri ou danger',go:()=>{$('#sh-digest').classList.remove('on');tab='places';go('list')}});
+ return out;
 }
+
+function paintBell(){
+ const n=notifs().filter(x=>x.fresh).length,d=$('#bdot');
+ d.hidden=!n;d.textContent=n>9?'9+':n;
+}
+
+function openNotifs(){
+ const list=notifs();
+ $('#dg-sub').textContent=list.length
+  ?`Ce qui te concerne, dans un rayon de ${fmt(RADIUS)}.`
+  :"Rien de neuf pour l'instant. Les nouveautés autour de toi apparaîtront ici.";
+ $('#dg-body').innerHTML=list.map((x,i)=>`<button class="nrow${x.fresh?' fresh':''}" data-n="${i}">
+   <span class="ni" style="background:${x.c}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+     stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><use href="#${x.i}"/></svg></span>
+   <span><b>${x.b}</b><small>${x.s}</small></span></button>`).join('');
+ document.querySelectorAll('#dg-body [data-n]').forEach(el=>
+  el.onclick=()=>{const it=list[+el.dataset.n];if(it&&it.go)it.go()});
+ $('#sh-digest').classList.add('on');
+ stamp();lastSeen=Date.now();paintBell();
+}
+$('#bell').onclick=openNotifs;
 $('#dg-close').onclick=()=>$('#sh-digest').classList.remove('on');
+
+/* au lancement : on n'ouvre la section que s'il y a réellement du neuf */
+function maybeDigest(){
+ if(openedOnce||!pos||!loaded.cats||!loaded.places)return;
+ openedOnce=true;
+ if(!lastSeen){stamp();lastSeen=Date.now();paintBell();return}
+ const fresh=notifs().filter(x=>x.fresh);
+ paintBell();
+ if(fresh.length)openNotifs();
+}
 
 /* ---------- le quartier ---------- */
 const nearLost=()=>pos?cats.filter(k=>k.status==='Perdu'&&dist(pos.lat,pos.lng,k.lat,k.lng)<RADIUS):[];
@@ -1772,14 +1842,14 @@ paintLevel();
 drawMap();
 onSnapshot(catsCol,snap=>{
  cats=snap.docs.map(d=>({id:d.id,...d.data()}));
- loaded.cats=true;updateBadge();maybeDigest();
+ loaded.cats=true;updateBadge();paintBell();maybeDigest();
  if(view==='map')drawMap();
  if(view==='list')drawList();
  if(view==='me')drawMe();
 },()=>toast('Connexion au serveur impossible — mode hors ligne'));
 onSnapshot(placesCol,snap=>{
  places=snap.docs.map(d=>({id:d.id,...d.data()}));
- loaded.places=true;maybeDigest();
+ loaded.places=true;paintBell();maybeDigest();
  if(view==='map')drawMap();
  if(view==='list')drawList();
  if(view==='me')drawMe();
