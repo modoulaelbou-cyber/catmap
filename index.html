@@ -500,9 +500,48 @@ nav .nbadge.admin{background:var(--admin);color:var(--admin-ink)}
 .intro .legal{text-align:center;font-size:11.5px;color:var(--ink-3);margin-top:14px;line-height:1.5}
 .intro .legal a{color:var(--ink-2);font-weight:650}
 #sh-legal{z-index:1300}
+
+/* ---- ouverture ----
+   Couvre le temps de chargement de la carte et des données. Elle se retire dès
+   que l'app est prête (avec un minimum pour ne pas clignoter) et de toute façon
+   au bout de 3 s, pour ne jamais bloquer l'entrée si quelque chose échoue. */
+.splash{position:fixed;inset:0;z-index:1400;background:var(--bg);
+ display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+ transition:opacity .42s ease,visibility .42s}
+.splash.gone{opacity:0;visibility:hidden;pointer-events:none}
+.sp-mark{width:74px;height:74px;border-radius:24px;background:var(--brand);color:var(--brand-ink);
+ display:flex;align-items:center;justify-content:center;
+ box-shadow:0 14px 34px color-mix(in srgb,var(--brand) 34%,transparent);
+ animation:sp-pop .62s cubic-bezier(.34,1.5,.5,1) both}
+.sp-mark svg{width:40px;height:40px;animation:sp-paw .62s cubic-bezier(.34,1.5,.5,1) .1s both}
+.sp-name{font-size:23px;font-weight:780;letter-spacing:-.035em;
+ animation:sp-rise .5s cubic-bezier(.32,.72,0,1) .22s both}
+.sp-trail{display:flex;gap:11px;margin-top:4px}
+.sp-trail span{width:9px;height:9px;border-radius:50%;background:var(--ink-3);
+ animation:sp-step 1.5s ease-in-out var(--d) infinite}
+@keyframes sp-pop{from{opacity:0;transform:scale(.55) rotate(-14deg)}
+ to{opacity:1;transform:scale(1) rotate(0)}}
+@keyframes sp-paw{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:scale(1)}}
+@keyframes sp-rise{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
+@keyframes sp-step{0%,100%{opacity:.18;transform:translateY(0)}
+ 40%{opacity:1;transform:translateY(-5px)}}
+@media (prefers-reduced-motion:reduce){
+ .sp-mark,.sp-mark svg,.sp-name{animation:none}
+ .sp-trail span{animation:sp-fade 1.4s ease-in-out var(--d) infinite}
+ @keyframes sp-fade{0%,100%{opacity:.2}40%{opacity:.9}}
+}
 </style>
 </head>
 <body>
+
+<div class="splash" id="splash">
+  <div class="sp-mark"><svg viewBox="0 0 24 24"><use href="#i-paw"/></svg></div>
+  <div class="sp-name">CatMap</div>
+  <div class="sp-trail">
+    <span style="--d:.16s"></span><span style="--d:.30s"></span>
+    <span style="--d:.44s"></span><span style="--d:.58s"></span>
+  </div>
+</div>
 
 <svg style="display:none">
 <symbol id="i-paw" viewBox="0 0 24 24" fill="currentColor">
@@ -1846,13 +1885,26 @@ async function deleteOwn(kind,id,pics){
  }catch{toast("Suppression impossible — tu n'es pas l'auteur de cette fiche")}
 }
 
+/* l'écran d'ouverture se retire quand l'app est prête, jamais plus tard que 3 s */
+const bootAt=Date.now();let splashGone=false;
+function dropSplash(){
+ if(splashGone)return;splashGone=true;
+ const wait=Math.max(0,900-(Date.now()-bootAt));
+ setTimeout(()=>{
+  const el=$('#splash');if(!el)return;
+  el.classList.add('gone');
+  setTimeout(()=>el.remove(),500);
+ },wait);
+}
+setTimeout(dropSplash,3000);
+
 paintLevel();
 /* la carte est la vue d'accueil : on la monte tout de suite, sans attendre
    ni un clic de navigation ni les premières données */
 drawMap();
 onSnapshot(catsCol,snap=>{
  cats=snap.docs.map(d=>({id:d.id,...d.data()}));
- loaded.cats=true;updateBadge();paintBell();maybeDigest();
+ loaded.cats=true;updateBadge();paintBell();maybeDigest();dropSplash();
  if(view==='map')drawMap();
  if(view==='list')drawList();
  if(view==='me')drawMe();

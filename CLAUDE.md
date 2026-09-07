@@ -185,6 +185,16 @@ l'activité sur ses propres signalements, et les nouveautés du quartier. Elle
 s'ouvre seule au lancement s'il y a du neuf. E-mail et push resteraient de toute
 façon impossibles sur Spark (Cloud Functions = plan Blaze).
 
+## Écran d'ouverture
+
+Le `.splash` est dans le HTML dès `<body>` pour s'afficher avant que le JS ne
+soit analysé — c'est ce qui lui permet de couvrir le chargement plutôt que de
+s'ajouter par-dessus. Il se retire sur `dropSplash()`, appelé quand les tuiles de
+la carte se chargent **et** quand les chats arrivent, avec un minimum de 900 ms
+pour ne pas clignoter et un `setTimeout` de secours à 3 s. Ne jamais le rendre
+purement temporisé : il doit suivre l'état réel de l'app, et ne jamais pouvoir
+bloquer l'entrée si le réseau échoue.
+
 ## Croquis de chat sur la carte
 
 Le champ `mask` d'une fiche est la vignette carrée (96 px, ~1 Ko) cadrée par
