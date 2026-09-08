@@ -202,3 +202,24 @@ l'utilisateur à l'étape « Cadre sa tête ». La carte la découpe en silhouet
 chat via un `clipPath` SVG : le marqueur montre donc la vraie photo, pas une
 approximation. Les fiches sans `mask` (anciennes) retombent sur le croquis rempli
 de la couleur choisie — garder ce repli.
+
+## Logo
+
+`_icon.svg` est la source unique du logo : chat assis de profil, crème sur
+anthracite, avec un repère de carte indigo. Il est aussi inline dans
+`index.html` comme `<symbol id="i-logo">` — utilisé dans l'en-tête, l'écran
+d'accueil et l'ouverture. Modifier les deux ensemble.
+
+Les PNG (`icon-192`, `icon-512`) sont générés depuis ce SVG en **carré plein,
+sans coins arrondis** : iOS et Android appliquent leur propre masque, arrondir
+soi-même produit un liseré. Régénération (aucun convertisseur SVG n'est
+installé, on passe par les outils macOS) :
+
+```
+sed 's/ rx="24"//' _icon.svg > /tmp/sq.svg
+qlmanage -t -s 512 -o /tmp /tmp/sq.svg && sips -z 512 512 /tmp/sq.svg.png --out icon-512.png
+```
+
+Le fond du logo est anthracite, donc en thème sombre il se confond avec le fond
+de l'app : l'écran d'ouverture lui ajoute un contour clair pour l'en détacher.
+Ne pas retirer ce contour.

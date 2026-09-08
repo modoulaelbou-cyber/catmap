@@ -1,12 +1,12 @@
 {
   "name": "CatMap",
   "short_name": "CatMap",
-  "description": "Repérer et cartographier les chats de son quartier",
+  "description": "Recenser les chats de son quartier et les lieux qui leur sont utiles",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#f5f5f7",
-  "theme_color": "#ee5a6f",
+  "background_color": "#1a1714",
+  "theme_color": "#1a1714",
   "lang": "fr",
   "icons": [
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
