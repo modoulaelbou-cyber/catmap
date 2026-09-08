@@ -1,12 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 100 100">
- <rect width="100" height="100" rx="24" fill="#1a1714"/>
- <g fill="#f6f4f0">
-  <path d="M17 92 C15 66 22 45 42 36 L64 42 C73 50 74 66 70 79 C67 88 61 92 53 92 Z"/>
-  <circle cx="62" cy="34" r="17"/>
-  <path d="M47 27 L50 9 L64 21 Z"/><path d="M67 19 L76 7 L80 26 Z"/>
-  <path d="M76 32 C81 33 82 38 79 41 L73 40 Z"/>
- </g>
- <ellipse cx="70" cy="32" rx="2.6" ry="4" fill="#1a1714"/>
- <path d="M79 95 C79 95 68 81 68 73 a11 11 0 1 1 22 0 c0 8 -11 22 -11 22 Z" fill="#4b40d9"/>
- <circle cx="79" cy="72" r="4.7" fill="#1a1714"/>
+ <rect width="100" height="100" rx="24" fill="#1f1c19"/>
+ <!-- chat de profil, cadré serré et coupé par le bord bas, comme sur le dessin d'origine -->
+ <path fill="#f6f4f0" d="
+   M0 95
+   C0 70 4 46 19 34
+   C29 26 39 22 46 18
+   L52 4 L58.5 19 L66 10 L71.5 28
+   C75 34.5 76 40 74.5 45
+   L78.6 46.8 C80 49 78.6 51.6 76 51
+   L73.2 53.8 C69.6 57.4 64.4 60.6 60 64
+   C55 69.4 56 77.6 58.2 86
+   C59.6 92.4 60.4 96.4 61 100
+   L0 100 Z"/>
+ <!-- œil en amande -->
+ <ellipse cx="66.4" cy="37.4" rx="2.7" ry="4.6" fill="#1f1c19"
+   transform="rotate(-20 66.4 37.4)"/>
+ <!-- repère de carte, chevauchant le poitrail -->
+ <path fill="#3b30d9" d="M79 95 C79 95 65.5 80 65.5 71.2 a13.5 13.5 0 1 1 27 0 c0 8.8 -13.5 23.8 -13.5 23.8 Z"/>
+ <circle cx="79" cy="70.2" r="6.2" fill="#1f1c19"/>
 </svg>
