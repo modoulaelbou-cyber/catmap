@@ -246,12 +246,15 @@ nav button:active{transform:scale(.94)}
  font-size:12.5px;color:var(--ink-2);line-height:1.5}
 .note svg{width:16px;height:16px;flex-shrink:0;margin-top:1px;stroke-width:1.9}
 
-.align{position:relative;aspect-ratio:1;border-radius:var(--r-lg);overflow:hidden;
- background:var(--sunk);touch-action:none}
-.align canvas{position:absolute;inset:0;width:100%;height:100%}
-.al-mask{position:absolute;inset:0;pointer-events:none;color:var(--bg)}
-.al-mask svg{width:100%;height:100%}
-.al-ctl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+.breeds{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.breed{display:flex;align-items:center;gap:12px;text-align:left;padding:11px 13px;
+ border:1px solid var(--line);border-radius:var(--r);background:var(--surface);
+ font:inherit;color:var(--ink);cursor:pointer;
+ transition:transform .16s,border-color .16s,background .16s}
+.breed:active{transform:scale(.97)}
+.breed.on{border-color:var(--brand);background:var(--brand-soft)}
+.breed svg{width:38px;height:38px;flex-shrink:0}
+.breed b{font-size:13.5px;font-weight:670;letter-spacing:-.01em;line-height:1.2}
 
 /* ---- choix du lieu ---- */
 .pickmap{height:300px;border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--line);
@@ -709,35 +712,22 @@ nav .nbadge.admin{background:var(--admin);color:var(--admin-ink)}
     </div>
 
     <div class="wiz-step" data-step="2">
-      <div class="wiz-head"><span class="wiz-n" data-n></span><h2>Cadre sa tête</h2>
-        <p>Place sa tête dans la découpe : c'est exactement cette image qui apparaîtra sur la carte.</p></div>
-      <div class="align" id="align">
-        <canvas id="al-cv"></canvas>
-        <div class="al-mask"><svg viewBox="0 0 64 64" preserveAspectRatio="none"><defs><mask id="mk">
-          <rect width="64" height="64" fill="#fff"/>
-          <path d="M13 30 16 6l17 12z" fill="#000"/><path d="M51 30 48 6 31 18z" fill="#000"/>
-          <ellipse cx="32" cy="37" rx="22" ry="20" fill="#000"/></mask></defs>
-          <rect width="64" height="64" fill="currentColor" mask="url(#mk)"/>
-          <g fill="none" stroke="#fff" stroke-width="1.1" opacity=".95">
-            <path d="M13 30 16 6l17 12z"/><path d="M51 30 48 6 31 18z"/>
-            <ellipse cx="32" cy="37" rx="22" ry="20"/></g></svg></div>
-      </div>
-      <div class="al-ctl">
-        <button class="ghost" id="al-zo">Réduire</button>
-        <button class="ghost" id="al-zi">Agrandir</button>
-      </div>
-      <div class="pickhint"><svg><use href="#i-crop"/></svg>
-        <span>Fais glisser la photo pour la recadrer. Sa vraie couleur remplira le croquis.</span></div>
-      <div class="wiz-nav"><button class="back" id="bA">Retour</button>
-        <button class="go" id="nA">Continuer</button></div>
-    </div>
-
-    <div class="wiz-step" data-step="3">
       <div class="wiz-head"><span class="wiz-n" data-n></span><h2>Sa couleur</h2>
         <p>Celle qu'on voit sur ta photo. Elle donnera sa couleur sur la carte.</p></div>
       <div class="cols" id="cols"></div>
       <div class="wiz-nav"><button class="back" id="b2">Retour</button>
         <button class="go" id="n2" disabled>Continuer</button></div>
+    </div>
+
+    <div class="wiz-step" data-step="3">
+      <div class="wiz-head"><span class="wiz-n" data-n></span><h2>Sa race</h2>
+        <p>Au jugé, d'après son allure. C'est elle qui dessine sa silhouette sur la carte.</p></div>
+      <div class="breeds" id="breeds"></div>
+      <div class="pickhint"><svg><use href="#i-info"/></svg>
+        <span>La plupart des chats de rue n'ont pas de race : « Je ne sais pas »
+          est une bonne réponse, mieux qu'une devinette.</span></div>
+      <div class="wiz-nav"><button class="back" id="bA">Retour</button>
+        <button class="go" id="nA" disabled>Continuer</button></div>
     </div>
 
     <div class="wiz-step" data-step="4">
@@ -1015,7 +1005,7 @@ const PLBL={Gamelle:'Gamelle',Eau:"Point d'eau",Abri:'Abri',Danger:'Zone dangere
 const OSM='https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const MAXPICS=4;
 
-let shots=[],pshots=[],color=null,status=null,ptype=null,pos=null,
+let shots=[],pshots=[],color=null,breed=null,status=null,ptype=null,pos=null,
     map=null,layer=null,pending=null,view='map',step=1,filter='all',tab='cats',
     reportTarget=null;
 let cats=[],places=[];
@@ -1114,27 +1104,71 @@ const zoneHint=n=>n>=6?"Le quartier l'a vu assez souvent pour cerner son territo
  :`${n===1?'Une seule observation':'Deux observations'} — signale-le si tu le croises, la zone se resserrera.`;
 
 /* ---------- croquis de chat ----------
-   Un rond de couleur ne dit rien ; une silhouette de chat teintée de la
-   couleur réelle du pelage se lit d'un coup d'œil sur la carte. */
+   Un rond de couleur ne dit rien ; une silhouette de chat teintée de la couleur
+   réelle du pelage se lit d'un coup d'œil sur la carte.
+   La race ne redessine pas tout : elle joue sur les deux seuls traits qui
+   tiennent encore à 46 px, la taille des oreilles et la fourrure longue qui
+   déborde du contour. Une race inconnue retombe sur l'européen. */
+/* Le point interne de chaque oreille redescend au niveau du sommet du crâne
+   (y=17). Plus haut, les deux oreilles se croisent en X au lieu de former une
+   encoche en V — d'autant plus visible que l'oreille est grande. */
+const EARS={
+ tiny: [[19,29],[21,17],[32.5,22]],
+ small:[[16,30],[18,14],[32.5,21]],
+ std:  [[13,30],[16,7],[32.5,20]],
+ big:  [[11,31],[13,2],[32.5,19]],
+ huge: [[9,31],[10,-2],[32.5,18]]
+};
+const BREEDS={
+ 'Européen':      {ears:'std',  fluff:0},
+ 'Chartreux':     {ears:'small',fluff:0},
+ 'Siamois':       {ears:'big',  fluff:0},
+ 'Persan':        {ears:'tiny', fluff:1},
+ 'Maine Coon':    {ears:'big',  fluff:1,tuft:1},
+ 'Poil long':     {ears:'std',  fluff:1},
+ 'Sphynx':        {ears:'huge', fluff:0},
+ 'Je ne sais pas':{ears:'std',  fluff:0}
+};
+const BLIST=Object.keys(BREEDS);
+const poly=pts=>'M'+pts.map(([x,y])=>`${x} ${y}`).join('L')+'Z';
+const flip=pts=>pts.map(([x,y])=>[64-x,y]);
+/* couronne de pointes : la seule façon de dire « poil long » à petite taille */
+function ruffPath(){
+ let d='';
+ for(let i=0;i<26;i++){
+  const t=i/26*Math.PI*2,k=i%2?1.16:1.01;
+  d+=(i?'L':'M')+(32+Math.cos(t)*22*k).toFixed(1)+' '+(37+Math.sin(t)*20*k).toFixed(1);
+ }
+ return d+'Z';
+}
 const lum=h=>{const n=parseInt(h.slice(1),16);
  return (0.2126*(n>>16)+0.7152*((n>>8)&255)+0.0722*(n&255))/255};
-function catSVG(c,extraClass){
+function catSVG(c,colorName,breed){
+ const b=BREEDS[breed]||BREEDS['Européen'];
  const light=lum(c)>.6,eye=light?'#3a332c':'#f7f3ec',line=light?'#8d857a':'#fff';
- const marks=extraClass==='Tigré'
+ const e=EARS[b.ears],ear=`<path d="${poly(e)}" fill="${c}"/><path d="${poly(flip(e))}" fill="${c}"/>`;
+ /* les plumets sont ce qui sépare le maine coon d'un simple poil long :
+    ils doivent rester lisibles à 46 px, donc épais et franchement sortants */
+ const tuft=b.tuft
+  ?`<g stroke="${line}" stroke-width="2.6" stroke-linecap="round">
+     <path d="M${e[1][0]} ${e[1][1]}l-3.5-6M${64-e[1][0]} ${e[1][1]}l3.5-6"/></g>`:'';
+ const marks=colorName==='Tigré'
   ?`<g stroke="${light?'#6b5a42':'#3b2f22'}" stroke-width="2.6" stroke-linecap="round" opacity=".75">
      <path d="M24 27h16M22 34h8M42 34h-8"/></g>`
-  :extraClass==='Bicolore'
+  :colorName==='Bicolore'
   ?`<path d="M32 18a22 20 0 0 0-21.6 24A22 20 0 0 0 32 57z" fill="#f2efe9" opacity=".9"/>`:'';
  return `<svg viewBox="0 0 64 64">
   <g stroke="${line}" stroke-width="3" stroke-linejoin="round">
-   <path d="M13 30 16 6l17 12z" fill="${c}"/><path d="M51 30 48 6 31 18z" fill="${c}"/>
-   <ellipse cx="32" cy="37" rx="22" ry="20" fill="${c}"/></g>
-  ${marks}
+   ${b.fluff?`<path d="${ruffPath()}" fill="${c}"/>`:''}
+   ${ear}<ellipse cx="32" cy="37" rx="22" ry="20" fill="${c}"/></g>
+  ${tuft}${marks}
   <g fill="${eye}"><ellipse cx="24" cy="35" rx="2.8" ry="3.4"/><ellipse cx="40" cy="35" rx="2.8" ry="3.4"/></g>
   <path d="M30.5 43.5h3l-1.5 2z" fill="${eye}"/></svg>`;
 }
-/* avec un cadrage, la carte montre la photo réelle découpée en chat ;
-   sinon on retombe sur le croquis rempli de la couleur choisie */
+/* Les fiches créées du temps où l'on demandait de cadrer la tête portent un
+   champ `mask` : leur marqueur reste la photo réelle découpée en chat. On ne
+   produit plus de `mask`, mais on continue de l'afficher — le retirer effacerait
+   une donnée que ces contributeurs ont pris la peine de cadrer. */
 function catPhotoSVG(k){
  const g='c'+Math.random().toString(36).slice(2,8);
  return `<svg viewBox="0 0 64 64"><defs><clipPath id="${g}">
@@ -1150,7 +1184,7 @@ const catIcon=(k,size)=>L.divIcon({
  className:'catpin '+(k.status==='Perdu'?'lost':k.status==='Retrouvé'?'found':''),
  iconSize:[size,size],iconAnchor:[size/2,size/2],
  html:(k.mask&&!flagged(k))?catPhotoSVG(k)
-  :catSVG(flagged(k)?'#9b9b9b':(COLORS[k.color]||'#999'),k.color)});
+  :catSVG(flagged(k)?'#9b9b9b':(COLORS[k.color]||'#999'),k.color,k.breed)});
 
 const placeIcon=p=>L.divIcon({className:'placepin',iconSize:[34,42],iconAnchor:[17,42],
  html:`<svg viewBox="0 0 34 42">
@@ -1170,14 +1204,19 @@ function showStep(n){
  document.querySelectorAll('.wiz-step').forEach(el=>{
   const k=s.indexOf(+el.dataset.step),lbl=el.querySelector('[data-n]');
   if(lbl)lbl.textContent=k<0?'':`Étape ${k+1} sur ${s.length}`});
- if(n===2)startAlign();
+ /* les silhouettes se repeignent dans la couleur qu'on vient de choisir :
+    on choisit le marqueur qui ressemble le plus à son chat, pas un mot */
+ if(n===3)drawBreeds();
  if(n===6)openPicker('pickmap-cat');
  if(n===7){
   $('#r-img').src=shots[0]?shots[0].thumb:'';
   const nm=$('#f-name').value.trim();
   $('#r-col').textContent=(nm&&status==='Perdu')?nm:color;
   $('#r-st').textContent=status;$('#r-st').className='badge'+(status==='Perdu'?' lost':'');
-  $('#r-pics').textContent=shots.length>1?`${shots.length} photos`:'1 photo'}
+  /* la race figure au récapitulatif : c'est elle qui décide de la silhouette
+     sur la carte, on doit pouvoir la corriger avant d'envoyer */
+  const br=(breed&&breed!=='Je ne sais pas')?breed+' · ':'';
+  $('#r-pics').textContent=br+(shots.length>1?`${shots.length} photos`:'1 photo')}
 }
 const next=()=>{const s=seq();showStep(s[Math.min(s.indexOf(step)+1,s.length-1)])};
 const back=()=>{const s=seq();showStep(s[Math.max(s.indexOf(step)-1,0)])};
@@ -1255,51 +1294,16 @@ $('#pfile').onchange=e=>{const f=e.target.files[0];if(!f)return;
  readShot(f,pshots,()=>{drawPShots();e.target.value=''})};
 drawPShots();
 
-/* ---------- cadrage de la tête ----------
-   La carte n'affiche pas un rond de couleur mais la photo elle-même découpée
-   en silhouette de chat. Pour que ça tombe juste, on demande à l'utilisateur
-   de placer la tête dans la découpe plutôt que de deviner par recadrage auto. */
-let alImg=null,alS=1,alX=0,alY=0,alBase=1;
-function drawAlign(){
- const cv=$('#al-cv');if(!cv||!alImg)return;
- const box=$('#align').getBoundingClientRect(),d=Math.round(box.width);
- if(!d)return;
- cv.width=d;cv.height=d;
- const c=cv.getContext('2d');
- c.fillStyle='#000';c.fillRect(0,0,d,d);
- const w=alImg.width*alBase*alS,h=alImg.height*alBase*alS;
- c.drawImage(alImg,(d-w)/2+alX*d,(d-h)/2+alY*d,w,h);
-}
-function startAlign(){
- if(!shots.length)return;
- const im=new Image();
- im.onload=()=>{
-  alImg=im;
-  const box=$('#align').getBoundingClientRect(),d=box.width||300;
-  alBase=Math.max(d/im.width,d/im.height);   /* couvre le cadre */
-  alS=1;alX=0;alY=0;drawAlign();
- };
- im.src=shots[0].full;
-}
-(function alignGestures(){
- const box=$('#align');let drag=false,px=0,py=0;
- const pt=e=>e.touches?e.touches[0]:e;
- box.addEventListener('pointerdown',e=>{drag=true;px=e.clientX;py=e.clientY;box.setPointerCapture(e.pointerId)});
- box.addEventListener('pointermove',e=>{
-  if(!drag)return;
-  const d=box.getBoundingClientRect().width||1;
-  alX+=(e.clientX-px)/d;alY+=(e.clientY-py)/d;px=e.clientX;py=e.clientY;drawAlign()});
- box.addEventListener('pointerup',()=>drag=false);
- box.addEventListener('pointercancel',()=>drag=false);
- $('#al-zi').onclick=()=>{alS=Math.min(4,alS*1.25);drawAlign()};
- $('#al-zo').onclick=()=>{alS=Math.max(.5,alS/1.25);drawAlign()};
-})();
-/* la vignette carrée : c'est elle que la carte découpe en forme de chat */
-function maskShot(){
- const cv=$('#al-cv');if(!cv||!cv.width)return null;
- const out=document.createElement('canvas');out.width=out.height=96;
- out.getContext('2d').drawImage(cv,0,0,96,96);
- return out.toDataURL('image/jpeg',.72);
+/* ---------- choix de la race ----------
+   Chaque race est présentée par sa silhouette, pas seulement par son nom : on
+   choisit le dessin qui ressemble le plus au chat qu'on a devant soi. */
+function drawBreeds(){
+ const c=COLORS[color]||'#8b8378';
+ $('#breeds').innerHTML=BLIST.map(n=>
+  `<button class="breed${n===breed?' on':''}" data-b="${n}">
+    ${catSVG(c,color,n)}<b>${n}</b></button>`).join('');
+ document.querySelectorAll('#breeds .breed').forEach(el=>el.onclick=()=>{
+  breed=el.dataset.b;drawBreeds();$('#nA').disabled=false});
 }
 
 /* ---------- épingle déplaçable ----------
@@ -1368,9 +1372,8 @@ async function pushPics(id,arr){
 
 async function addCat(){
  const at=picked('pickmap-cat'),ref=doc(catsCol),now=new Date().toISOString();
- const mask=maskShot();
  const data={color,status,thumb:shots[0].thumb,lat:at.lat,lng:at.lng,uid:uid(),
-  ...(mask?{mask}:{}),
+  ...(breed?{breed}:{}),
   first:now,last:now,seen:1,spots:[spotOf(at)],pics:shots.length};
  if(status==='Perdu'){
   const n=$('#f-name').value.trim(),c=$('#f-contact').value.trim();
@@ -1400,10 +1403,11 @@ $('#m-yes').onclick=async()=>{
  }catch{toast('Impossible pour le moment')}};
 $('#m-no').onclick=()=>{$('#sh-match').classList.remove('on');addCat()};
 
-function resetCat(){shots=[];color=status=null;pending=null;alImg=null;alS=1;alX=0;alY=0;
+function resetCat(){shots=[];color=breed=status=null;pending=null;
  $('#f-name').value='';$('#f-contact').value='';$('#f-note').value='';
  document.querySelectorAll('.col,#v-add .st').forEach(b=>b.classList.remove('on'));
- $('#n2').disabled=true;$('#n3').disabled=true;
+ $('#n2').disabled=true;$('#nA').disabled=true;$('#n3').disabled=true;
+ drawBreeds();
  resetPicker('pickmap-cat');drawShots();showStep(1)}
 showStep(1);
 
@@ -1708,7 +1712,10 @@ function detail(id){
  const k=cats.find(x=>x.id===id);if(!k)return;
  detailId={kind:'cats',id};
  const t=territory(k);
- $('#d-title').textContent=(k.name?k.name+' · ':'')+k.color+' · '+k.status;
+ /* la race n'apparaît que si elle a été identifiée : « Je ne sais pas » est
+    une réponse utile pour le dessin, pas une information à afficher */
+ const br=(k.breed&&k.breed!=='Je ne sais pas')?k.breed+' · ':'';
+ $('#d-title').textContent=(k.name?k.name+' · ':'')+br+k.color+' · '+k.status;
  gallery($('#d-pics'),k,id);
  $('#d-zone-t').textContent=`${zoneLabel(t.n)} · rayon ${fmt(t.radius)}`;
  $('#d-zone-s').textContent=zoneHint(t.n);

@@ -24,11 +24,11 @@ Dépendance externe unique : Leaflet 1.9.4 via CDN unpkg, avec les tuiles OpenSt
 
 L'utilisateur prend une photo via l'appareil natif (`capture="environment"`). L'image est redimensionnée à 900 px max et compressée en JPEG qualité 0.75 sur un canvas avant stockage — sinon le quota localStorage explose au bout de quelques photos.
 
-Il choisit ensuite une couleur parmi six et une situation parmi trois : Errant, Promenade, Perdu. La position vient du GPS du navigateur.
+Il choisit ensuite une couleur parmi six, une race parmi huit (« Je ne sais pas » compris — la plupart des chats de rue n'ont pas de race, et une devinette vaut moins qu'un aveu), et une situation parmi trois : Errant, Promenade, Perdu. La position vient du GPS du navigateur.
 
 Au moment de l'envoi, l'app cherche les chats déjà enregistrés de la même couleur dans un rayon de 300 m (distance haversine). S'il y en a, elle affiche la photo du plus proche et demande si c'est le même animal. Si oui, elle incrémente le compteur d'observations et met à jour la position ; sinon elle crée une nouvelle fiche.
 
-La carte affiche un marqueur circulaire par chat, rempli de sa couleur, avec un contour rouge pour les chats perdus. La position de l'utilisateur est un point bleu.
+La carte affiche une silhouette de chat par fiche, remplie de sa couleur et dessinée d'après sa race, avec un contour rouge pour les chats perdus. La position de l'utilisateur est un point bleu.
 
 ## Modèle de données
 
@@ -46,6 +46,8 @@ Collection `cats` — fiche légère, chargée entièrement à chaque ouverture 
   first: '2026-09-02T18:00:00.000Z',
   last:  '2026-09-02T18:00:00.000Z',
   seen: 1,                // nombre d'observations
+  breed: 'Maine Coon',    // Européen | Chartreux | Siamois | Persan | Maine Coon
+                          // | Poil long | Sphynx | Je ne sais pas — optionnel
   name: 'Minou',          // optionnel, chats perdus seulement
   contact: '06 12 34 56 78'  // optionnel, chats perdus seulement — PUBLIC
 }
@@ -220,11 +222,31 @@ Trois règles à ne pas défaire :
 
 ## Croquis de chat sur la carte
 
-Le champ `mask` d'une fiche est la vignette carrée (96 px, ~1 Ko) cadrée par
-l'utilisateur à l'étape « Cadre sa tête ». La carte la découpe en silhouette de
-chat via un `clipPath` SVG : le marqueur montre donc la vraie photo, pas une
-approximation. Les fiches sans `mask` (anciennes) retombent sur le croquis rempli
-de la couleur choisie — garder ce repli.
+Le marqueur d'un chat est une **silhouette dessinée**, remplie de la couleur
+choisie et découpée d'après la **race** (`catSVG(couleur, nomCouleur, race)`).
+La race ne redessine pas tout : elle ne joue que sur les deux traits qui tiennent
+encore à 46 px, la **taille des oreilles** (`EARS`) et la **fourrure longue** qui
+déborde du contour, plus les plumets du maine coon. Une race absente ou inconnue
+retombe sur l'européen — ne pas supprimer ce repli, la plupart des fiches n'auront
+pas de race.
+
+Deux pièges vérifiés à l'œil, à ne pas réintroduire :
+
+- Le **point interne** de chaque oreille doit redescendre au niveau du sommet du
+  crâne (y ≈ 17-22). Plus haut, les deux oreilles se croisent en X au lieu de
+  former une encoche en V, et c'est d'autant plus laid que l'oreille est grande.
+- **Maine coon et poil long** se confondaient quand ils ne différaient que par
+  les plumets. Le maine coon a donc aussi de **grandes oreilles**.
+
+Toute modification du dessin se juge sur une planche aux trois tailles (96, 46,
+34 px) et dans les six couleurs — pas dans le questionnaire, où tout est gros.
+
+**L'étape « Cadre sa tête » a été retirée** (2026-09-10) : demander un cadrage
+manuel pour fabriquer une vignette était le pas le plus long du questionnaire.
+Les fiches d'avant portent encore un champ `mask` et leur marqueur reste la photo
+réelle découpée en chat (`catPhotoSVG`) — garder cet affichage, le retirer
+effacerait un travail que ces contributeurs ont fait à la main. On n'écrit plus
+de `mask`.
 
 ## Logo
 
