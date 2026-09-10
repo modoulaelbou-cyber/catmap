@@ -499,54 +499,86 @@ nav .nbadge.admin{background:var(--admin);color:var(--admin-ink)}
 .intro .legal a{color:var(--ink-2);font-weight:650}
 #sh-legal{z-index:1300}
 
-/* ---- ouverture ----
-   Couvre le temps de chargement de la carte et des données. Elle se retire dès
-   que l'app est prête (avec un minimum pour ne pas clignoter) et de toute façon
-   au bout de 3 s, pour ne jamais bloquer l'entrée si quelque chose échoue. */
-.splash{position:fixed;inset:0;z-index:1400;background:var(--bg);
- display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
- transition:opacity .42s ease,visibility .42s}
-.splash.gone{opacity:0;visibility:hidden;pointer-events:none}
-/* le logo a un fond anthracite : en thème sombre il faut le détacher du fond,
-   sinon le chat flotte dans le noir */
-.sp-mark{width:96px;height:96px;border-radius:30px;overflow:hidden;
- box-shadow:0 16px 40px rgba(0,0,0,.35),0 0 0 1px color-mix(in srgb,var(--ink) 14%,transparent);
- animation:sp-pop .62s cubic-bezier(.34,1.5,.5,1) both}
-.sp-mark svg{width:100%;height:100%;display:block}
-/* l'épingle tombe en place une fois le logo posé */
-.sp-mark svg path[fill^="var(--logo-pin"]{transform-origin:79px 95px;
- animation:sp-drop .5s cubic-bezier(.34,1.5,.5,1) .34s both}
-.sp-mark svg circle[r="6.2"]{animation:sp-hole .3s ease .62s both}
-@keyframes sp-drop{from{opacity:0;transform:translateY(-16px) scale(.5)}
- to{opacity:1;transform:translateY(0) scale(1)}}
-@keyframes sp-hole{from{opacity:0}to{opacity:1}}
-.sp-name{font-size:23px;font-weight:780;letter-spacing:-.035em;
- animation:sp-rise .5s cubic-bezier(.32,.72,0,1) .22s both}
-.sp-trail{display:flex;gap:11px;margin-top:4px}
-.sp-trail span{width:9px;height:9px;border-radius:50%;background:var(--ink-3);
- animation:sp-step 1.5s ease-in-out var(--d) infinite}
-@keyframes sp-pop{from{opacity:0;transform:scale(.55) rotate(-14deg)}
- to{opacity:1;transform:scale(1) rotate(0)}}
-@keyframes sp-paw{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:scale(1)}}
-@keyframes sp-rise{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
-@keyframes sp-step{0%,100%{opacity:.18;transform:translateY(0)}
- 40%{opacity:1;transform:translateY(-5px)}}
+/* ---- viseur d'ouverture ----
+   L'app s'ouvre sur l'appareil photo : croiser un chat et le photographier doit
+   tenir en un geste, sans écran d'attente entre les deux. Le viseur sert aussi
+   de couverture au démarrage — la carte se monte derrière lui.
+   Il passe SOUS .intro (1200) pour que la première visite s'explique avant que
+   le navigateur ne demande l'accès à la caméra : une demande sans contexte se
+   solde par un refus, et un refus est difficile à rattraper sur iOS. */
+.cam{position:fixed;inset:0;z-index:1150;background:#000;
+ opacity:0;visibility:hidden;transition:opacity .3s ease,visibility .3s}
+.cam.on{opacity:1;visibility:visible}
+.cam video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
+.cam .veil{position:absolute;inset:0;pointer-events:none;
+ background:linear-gradient(#000000a6,#0000 20%,#0000 52%,#000000cc)}
+.cam-mark{position:absolute;top:calc(env(safe-area-inset-top) + 13px);left:16px;
+ width:30px;height:30px;border-radius:10px;overflow:hidden;opacity:.92}
+.cam-mark svg{width:100%;height:100%;display:block}
+.cam-hint{position:absolute;left:60px;right:20px;top:calc(env(safe-area-inset-top) + 19px);
+ color:#fff;font-size:14px;font-weight:640;letter-spacing:-.01em;
+ text-shadow:0 1px 10px rgba(0,0,0,.55)}
+
+/* tout est en bas : l'app s'utilise dehors, à une main */
+.cam-bar{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 94px);
+ display:flex;align-items:center;justify-content:center;gap:46px}
+.shutter{width:76px;height:76px;border-radius:50%;flex-shrink:0;padding:0;cursor:pointer;
+ border:5px solid #fff;background:#ffffff2e;
+ transition:transform .12s ease,background .12s ease}
+.shutter:active{transform:scale(.9);background:#ffffff6b}
+.cam-side{width:48px;height:48px;border-radius:50%;border:0;flex-shrink:0;cursor:pointer;
+ background:#ffffff26;backdrop-filter:blur(6px);color:#fff;
+ display:flex;align-items:center;justify-content:center;transition:transform .12s ease}
+.cam-side svg{width:23px;height:23px;stroke-width:1.8}
+.cam-side:active{transform:scale(.9)}
+.cam-map{position:absolute;left:50%;transform:translateX(-50%);
+ bottom:calc(env(safe-area-inset-bottom) + 28px);
+ border:0;background:#ffffff21;backdrop-filter:blur(6px);color:#fff;font:inherit;
+ font-size:13.5px;font-weight:650;padding:10px 18px;border-radius:100px;cursor:pointer;
+ display:flex;align-items:center;gap:7px}
+.cam-map svg{width:15px;height:15px;stroke-width:2.3}
+.cam-map:active{background:#ffffff3d}
+/* le seul retour qui dit que la photo est partie */
+.cam-flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none}
+.cam-flash.go{animation:camflash .34s ease}
+@keyframes camflash{from{opacity:.85}to{opacity:0}}
+
+/* caméra refusée, absente, ou page non sécurisée : jamais de cul-de-sac */
+.cam-deny{position:absolute;inset:0;background:var(--bg);color:var(--ink);display:none;
+ flex-direction:column;align-items:center;justify-content:center;text-align:center;
+ padding:32px;gap:10px}
+.cam-deny.on{display:flex}
+.cam-deny h2{font-size:20px;font-weight:730;letter-spacing:-.03em}
+.cam-deny p{font-size:14px;color:var(--ink-2);line-height:1.5;max-width:300px}
+.cam-deny .go{margin-top:10px}
 @media (prefers-reduced-motion:reduce){
- .sp-mark,.sp-name{animation:none}
- .sp-mark svg path[fill^="var(--logo-pin"],.sp-mark svg circle[r="6.2"]{animation:none}
- .sp-trail span{animation:sp-fade 1.4s ease-in-out var(--d) infinite}
- @keyframes sp-fade{0%,100%{opacity:.2}40%{opacity:.9}}
+ .cam-flash.go{animation:none}
 }
 </style>
 </head>
 <body>
 
-<div class="splash" id="splash">
-  <div class="sp-mark"><svg viewBox="0 0 100 100"><use href="#i-logo"/></svg></div>
-  <div class="sp-name">CatMap</div>
-  <div class="sp-trail">
-    <span style="--d:.16s"></span><span style="--d:.30s"></span>
-    <span style="--d:.44s"></span><span style="--d:.58s"></span>
+<div class="cam on" id="cam">
+  <video id="cam-v" playsinline webkit-playsinline muted autoplay></video>
+  <div class="veil"></div>
+  <span class="cam-mark"><svg viewBox="0 0 100 100"><use href="#i-logo"/></svg></span>
+  <div class="cam-hint">Un chat ? Photographie-le.</div>
+  <div class="cam-flash" id="cam-flash"></div>
+  <div class="cam-bar">
+    <button class="cam-side" id="cam-lib" aria-label="Choisir une photo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><use href="#i-pic"/></svg></button>
+    <button class="shutter" id="shutter" aria-label="Prendre la photo"></button>
+    <button class="cam-side" id="cam-flip" aria-label="Changer de caméra">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><use href="#i-flip"/></svg></button>
+  </div>
+  <button class="cam-map" id="cam-map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 14.5 12 8.5l6 6"/></svg>Voir la carte</button>
+  <input type="file" id="camfile" accept="image/*" style="display:none">
+  <div class="cam-deny" id="cam-deny">
+    <h2>Caméra indisponible</h2>
+    <p>CatMap n'a pas accès à l'appareil photo. Tu peux l'autoriser dans les
+      réglages de ton navigateur, ou partir d'une photo déjà prise.</p>
+    <button class="go" id="deny-lib">Choisir une photo</button>
+    <button class="ghost" id="deny-map">Aller à la carte</button>
   </div>
 </div>
 
@@ -576,6 +608,12 @@ nav .nbadge.admin{background:var(--admin);color:var(--admin-ink)}
  <ellipse cx="6.3" cy="10" rx="2.2" ry="2.8"/><ellipse cx="10.8" cy="7" rx="2.2" ry="3"/>
  <ellipse cx="15.6" cy="7.2" rx="2.2" ry="3"/><ellipse cx="19.3" cy="10.6" rx="2.1" ry="2.6"/>
  <path d="M12.7 12.6c2.5 0 4.6 1.7 5.3 3.6.8 2.2-.9 4.2-3.1 4.2-1 0-1.6-.3-2.2-.3s-1.2.3-2.2.3c-2.2 0-3.9-2-3.1-4.2.7-1.9 2.8-3.6 5.3-3.6z"/></symbol>
+<symbol id="i-pic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+ <rect x="3" y="4.5" width="18" height="15" rx="2.5"/>
+ <path d="M3.6 16.4 8.5 11.6l4 3.9 3-2.9 4.4 4.3"/><circle cx="8.4" cy="9" r="1.5"/></symbol>
+<symbol id="i-flip" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
+ <path d="M20 11a8 8 0 0 0-13.6-4.6L3.5 9"/><path d="M3.5 4.5V9H8"/>
+ <path d="M4 13a8 8 0 0 0 13.6 4.6L20.5 15"/><path d="M20.5 19.5V15H16"/></symbol>
 <symbol id="i-cam" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round">
  <path d="M3 9a2.5 2.5 0 0 1 2.5-2.5h1.1a1 1 0 0 0 .84-.46l.86-1.33a1 1 0 0 1 .84-.46h5.72a1 1 0 0 1 .84.46l.86 1.33a1 1 0 0 0 .84.46h1.1A2.5 2.5 0 0 1 21 9v8.5A2.5 2.5 0 0 1 18.5 20h-13A2.5 2.5 0 0 1 3 17.5z"/>
  <circle cx="12" cy="13" r="3.5"/></symbol>
@@ -1403,7 +1441,6 @@ function go(v){
 }
 document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>go(b.dataset.v));
 $('#fab').onclick=()=>$('#sh-pick').classList.add('on');
-$('#pick-cat').onclick=()=>{$('#sh-pick').classList.remove('on');go('add')};
 $('#pick-place').onclick=()=>{$('#sh-pick').classList.remove('on');go('place')};
 $('#add-x').onclick=()=>go('map');
 $('#place-x').onclick=()=>go('map');
@@ -1784,7 +1821,9 @@ const INTRO='catmap.intro.v2';
 try{if(!localStorage.getItem(INTRO))$('#intro').classList.add('on')}catch{}
 $('#intro-go').onclick=()=>{
  try{localStorage.setItem(INTRO,'1')}catch{}
- $('#intro').classList.remove('on')};
+ $('#intro').classList.remove('on');
+ /* la demande d'accès à la caméra arrive maintenant, une fois l'app expliquée */
+ openCam()};
 $('#intro-legal').onclick=e=>{e.preventDefault();$('#sh-legal').classList.add('on')};
 
 /* ---------- comptes ----------
@@ -1913,26 +1952,102 @@ async function deleteOwn(kind,id,pics){
  }catch{toast("Suppression impossible — tu n'es pas l'auteur de cette fiche")}
 }
 
-/* l'écran d'ouverture se retire quand l'app est prête, jamais plus tard que 3 s */
-const bootAt=Date.now();let splashGone=false;
-function dropSplash(){
- if(splashGone)return;splashGone=true;
- const wait=Math.max(0,900-(Date.now()-bootAt));
- setTimeout(()=>{
-  const el=$('#splash');if(!el)return;
-  el.classList.add('gone');
-  setTimeout(()=>el.remove(),500);
- },wait);
+/* ---------- viseur ----------
+   L'app s'ouvre ici plutôt que sur un écran d'attente. Le flux est coupé dès
+   qu'on quitte l'écran ou que l'app passe en arrière-plan : une caméra laissée
+   ouverte vide la batterie et garde le témoin d'enregistrement allumé. */
+const CAMOFF='catmap.camoff.v1';
+let camStream=null,camFacing='environment',camBusy=false;
+const camShown=()=>$('#cam').classList.contains('on');
+
+function camStop(){
+ if(camStream)camStream.getTracks().forEach(t=>t.stop());
+ camStream=null;
+ const v=$('#cam-v');if(v)v.srcObject=null;
 }
-setTimeout(dropSplash,3000);
+async function camStart(){
+ if(camStream||camBusy)return;
+ camBusy=true;
+ try{
+  camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:camFacing},audio:false});
+  const v=$('#cam-v');v.srcObject=camStream;await v.play().catch(()=>{});
+  $('#cam-deny').classList.remove('on');
+  try{localStorage.removeItem(CAMOFF)}catch{}
+ }catch{
+  /* refus, absence de caméra, ou page non sécurisée. On ne bloque jamais
+     l'entrée : la galerie et la carte restent à portée, et les ouvertures
+     suivantes se feront directement sur la carte plutôt que sur un viseur noir. */
+  camStop();
+  $('#cam-deny').classList.add('on');
+  try{localStorage.setItem(CAMOFF,'1')}catch{}
+ }
+ camBusy=false;
+}
+function openCam(){$('#cam').classList.add('on');camStart()}
+function closeCam(){$('#cam').classList.remove('on');camStop()}
+const toMap=()=>{closeCam();go('map')};
+
+/* une photo prise ici ouvre toujours une nouvelle fiche : on repart de zéro,
+   puis on saute la première étape du questionnaire, qui vient d'être faite. */
+function startCatFrom(src){
+ resetCat();
+ shots.push({full:resize(src,900,.75),thumb:resize(src,120,.5),dark:meanLum(src)<58});
+ drawShots();closeCam();go('add');showStep(2);
+}
+
+$('#shutter').onclick=()=>{
+ const v=$('#cam-v');
+ if(!camStream||!v.videoWidth)return;
+ const cv=document.createElement('canvas');
+ cv.width=v.videoWidth;cv.height=v.videoHeight;
+ cv.getContext('2d').drawImage(v,0,0);
+ const fl=$('#cam-flash');fl.classList.remove('go');void fl.offsetWidth;fl.classList.add('go');
+ if(navigator.vibrate)navigator.vibrate(12);
+ startCatFrom(cv);
+};
+$('#cam-flip').onclick=()=>{
+ camFacing=camFacing==='environment'?'user':'environment';
+ camStop();camStart();
+};
+$('#cam-lib').onclick=$('#deny-lib').onclick=()=>$('#camfile').click();
+$('#camfile').onchange=e=>{
+ const f=e.target.files[0];if(!f)return;
+ const img=new Image(),r=new FileReader();
+ r.onload=()=>{img.onload=()=>startCatFrom(img);img.src=r.result};
+ r.readAsDataURL(f);e.target.value='';
+};
+$('#cam-map').onclick=toMap;
+$('#deny-map').onclick=toMap;
+/* balayage vers le haut : la carte remonte du bas, comme le dit le chevron */
+(function camSwipe(){
+ const el=$('#cam');let y0=null;
+ el.addEventListener('touchstart',e=>{y0=e.touches[0].clientY},{passive:true});
+ el.addEventListener('touchend',e=>{
+  if(y0===null)return;
+  const dy=e.changedTouches[0].clientY-y0;y0=null;
+  if(dy<-70)toMap();
+ },{passive:true});
+})();
+document.addEventListener('visibilitychange',()=>{
+ if(document.hidden)camStop();else if(camShown())camStart();
+});
+/* « Ajouter » sur la carte revient au viseur : une seule façon d'ajouter un chat */
+$('#pick-cat').onclick=()=>{$('#sh-pick').classList.remove('on');openCam()};
 
 paintLevel();
-/* la carte est la vue d'accueil : on la monte tout de suite, sans attendre
-   ni un clic de navigation ni les premières données */
+/* la carte se monte tout de suite, derrière le viseur : quand on la rejoint
+   elle est déjà prête, sans attendre un clic de navigation ni les données */
 drawMap();
+
+/* Ce qui s'ouvre : le viseur, sauf si la caméra a déjà été refusée — auquel cas
+   la carte, qui reste le second visage de l'app. À la toute première visite, la
+   présentation passe d'abord et n'ouvre le viseur qu'une fois lue. */
+let camRefused=false;try{camRefused=!!localStorage.getItem(CAMOFF)}catch{}
+if(camRefused||$('#intro').classList.contains('on'))$('#cam').classList.remove('on');
+else camStart();
 onSnapshot(catsCol,snap=>{
  cats=snap.docs.map(d=>({id:d.id,...d.data()}));
- loaded.cats=true;updateBadge();paintBell();maybeDigest();dropSplash();
+ loaded.cats=true;updateBadge();paintBell();maybeDigest();
  if(view==='map')drawMap();
  if(view==='list')drawList();
  if(view==='me')drawMe();

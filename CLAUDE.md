@@ -185,15 +185,38 @@ l'activité sur ses propres signalements, et les nouveautés du quartier. Elle
 s'ouvre seule au lancement s'il y a du neuf. E-mail et push resteraient de toute
 façon impossibles sur Spark (Cloud Functions = plan Blaze).
 
-## Écran d'ouverture
+## Viseur d'ouverture
 
-Le `.splash` est dans le HTML dès `<body>` pour s'afficher avant que le JS ne
-soit analysé — c'est ce qui lui permet de couvrir le chargement plutôt que de
-s'ajouter par-dessus. Il se retire sur `dropSplash()`, appelé quand les tuiles de
-la carte se chargent **et** quand les chats arrivent, avec un minimum de 900 ms
-pour ne pas clignoter et un `setTimeout` de secours à 3 s. Ne jamais le rendre
-purement temporisé : il doit suivre l'état réel de l'app, et ne jamais pouvoir
-bloquer l'entrée si le réseau échoue.
+**L'app s'ouvre sur l'appareil photo, pas sur la carte.** Croiser un chat et le
+photographier doit tenir en un geste : un écran d'attente, une carte à traverser
+ou un menu à ouvrir suffisent à faire renoncer. Le viseur (`.cam`, plein écran)
+sert aussi de couverture au démarrage — la carte se monte derrière lui et est
+prête quand on la rejoint. C'est ce qui a remplacé l'ancienne animation
+d'ouverture, jugée inutile : le viseur n'a rien à annoncer, il est déjà l'app.
+
+Depuis le viseur : le déclencheur, la galerie, le changement de caméra, et
+« Voir la carte » (ou un balayage vers le haut). Une photo prise ici ouvre
+toujours une **nouvelle** fiche : `startCatFrom()` fait `resetCat()` puis saute
+directement à l'étape « Cadre sa tête », la première étape venant d'être faite.
+Le bouton « Ajouter » de la carte revient au viseur : il n'y a qu'une façon
+d'ajouter un chat.
+
+Trois règles à ne pas défaire :
+
+- **Le flux est coupé** dès qu'on quitte le viseur et sur `visibilitychange`.
+  Une caméra laissée ouverte vide la batterie et garde le témoin
+  d'enregistrement allumé — les utilisateurs le remarquent et désinstallent.
+- **Le viseur passe sous `.intro`** (z-index 1150 contre 1200). À la première
+  visite, la présentation s'affiche d'abord et n'ouvre le viseur qu'une fois lue :
+  demander l'accès à la caméra sans avoir rien expliqué se solde par un refus,
+  et sur iOS un refus ne se rattrape que dans les réglages du système.
+- **Un refus n'enferme jamais.** `catmap.camoff.v1` mémorise l'échec : l'écran
+  propose la galerie et la carte, et les ouvertures suivantes se font sur la
+  carte plutôt que sur un viseur noir. La clé est effacée dès qu'un accès
+  réussit. Même chemin pour un appareil sans caméra ou une page non sécurisée.
+
+`getUserMedia` ne fonctionne dans une PWA installée sur iOS qu'à partir d'iOS
+16.4 ; en dessous, c'est le repli ci-dessus qui s'applique.
 
 ## Croquis de chat sur la carte
 
