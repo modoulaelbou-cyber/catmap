@@ -57,6 +57,29 @@ button,input{font-family:inherit;color:inherit}
 svg{display:block}
 
 .app{display:flex;flex-direction:column;height:100dvh}
+
+/* ---- les trois volets ----
+   Structure à la Snap : la carte à gauche, l'appareil photo au centre — c'est
+   l'accueil — et le profil à droite. Le défilement est le scroll-snap natif du
+   navigateur, pas une simulation en JS : l'inertie, le rebond et la vitesse sont
+   ceux du système, et rien ne se désynchronise.
+   `scroll-snap-stop:always` empêche de sauter par-dessus l'appareil photo d'un
+   coup de doigt rapide — on passe toujours par le volet voisin.
+   La carte capte le doigt pour elle (Leaflet), donc depuis ce volet c'est la
+   barre du bas qui fait passer aux autres : ne pas retirer cette barre. */
+.pager{flex:1;display:flex;overflow-x:auto;overflow-y:hidden;
+ scroll-snap-type:x mandatory;overscroll-behavior-x:contain;
+ scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.pager::-webkit-scrollbar{display:none}
+.pane{flex:0 0 100%;width:100%;height:100%;position:relative;
+ scroll-snap-align:center;scroll-snap-stop:always}
+#p-me{overflow-y:auto}
+/* la cloche flotte au-dessus de cet en-tête : sans cette réserve, le rang
+   vient se glisser dessous */
+#p-me header{padding-right:64px}
+/* la cloche flotte au-dessus des trois volets : les notifications doivent
+   rester à portée où qu'on soit */
+.bellwrap{position:fixed;z-index:20;right:14px;top:calc(env(safe-area-inset-top) + 10px)}
 header{display:flex;align-items:center;gap:8px;flex-shrink:0;
  padding:calc(env(safe-area-inset-top) + 14px) 20px 12px}
 header .mark{width:28px;height:28px;border-radius:9px;overflow:hidden;flex-shrink:0}
@@ -66,7 +89,10 @@ header .lvl{font-size:11.5px;font-weight:700;color:var(--brand);background:var(-
  padding:5px 11px;border-radius:100px}
 
 main{flex:1;overflow:hidden;position:relative}
-.view{position:absolute;inset:0;overflow-y:auto;opacity:0;visibility:hidden;
+/* le questionnaire et l'ajout de lieu passent par-dessus les volets : ce sont
+   des parcours qu'on termine ou qu'on abandonne, pas des destinations */
+.view{position:fixed;inset:0;z-index:1050;background:var(--bg);
+ overflow-y:auto;opacity:0;visibility:hidden;
  transition:opacity .2s ease;-webkit-overflow-scrolling:touch}
 .view.on{opacity:1;visibility:visible}
 .pad{padding:4px 20px 32px}
@@ -86,7 +112,10 @@ nav button:active{transform:scale(.94)}
  box-shadow:0 0 0 2.5px var(--bg)}
 
 /* ---- carte ---- */
-#map{width:100%;height:100%;background:var(--sunk)}
+/* la carte prend le doigt pour elle : sans ça, la faire glisser ferait aussi
+   défiler le volet dessous, et on ne saurait jamais lequel des deux bouge.
+   C'est pourquoi la barre du bas reste indispensable depuis ce volet. */
+#map{width:100%;height:100%;background:var(--sunk);touch-action:none}
 .leaflet-container{font-family:inherit;background:var(--sunk)}
 /* Les tuiles OpenStreetMap sont libres et sans clé, mais très colorées.
    On les désature ici pour obtenir un fond neutre sur lequel les marqueurs
@@ -114,7 +143,8 @@ nav button:active{transform:scale(.94)}
 .me i{display:block;width:100%;height:100%;border-radius:50%;background:#2f7cf6;
  border:3px solid #fff;box-shadow:0 0 0 7px rgba(47,124,246,.16),0 2px 8px rgba(0,0,0,.35)}
 
-.map-ui{position:absolute;z-index:500;left:14px;right:14px;top:14px;display:flex;gap:7px;
+.map-ui{position:absolute;z-index:500;left:14px;right:64px;display:flex;gap:7px;
+ top:calc(env(safe-area-inset-top) + 12px);
  pointer-events:none;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
 .map-ui::-webkit-scrollbar{display:none}
 .chip{pointer-events:auto;flex-shrink:0;border:1px solid var(--line);
@@ -124,19 +154,29 @@ nav button:active{transform:scale(.94)}
  box-shadow:var(--shadow);transition:transform .14s}
 .chip:active{transform:scale(.95)}
 .chip.on{background:var(--brand);color:var(--brand-ink);border-color:transparent}
-.locate{position:absolute;z-index:500;right:14px;bottom:96px;width:46px;height:46px;border-radius:50%;
+.locate{position:absolute;z-index:500;right:17px;bottom:84px;width:46px;height:46px;border-radius:50%;
  border:1px solid var(--line);background:color-mix(in srgb,var(--surface) 92%,transparent);
  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
  color:var(--ink);display:flex;align-items:center;justify-content:center;box-shadow:var(--shadow);
  transition:transform .14s}
 .locate:active{transform:scale(.92)}
 .locate svg{width:20px;height:20px;stroke-width:1.9}
-.fab{position:absolute;z-index:500;left:50%;transform:translateX(-50%);bottom:20px;
- display:flex;align-items:center;gap:8px;padding:15px 24px;border:0;border-radius:100px;
- background:var(--brand);color:var(--brand-ink);font-size:15.5px;font-weight:730;
+/* Le bouton d'ajout a perdu son libellé : le volet du milieu est devenu la
+   façon normale d'ajouter un chat, il ne reste ici que pour les lieux et pour
+   ceux qui passent par la carte. En rond, il laisse la place à la pastille
+   « Le quartier » — à trois éléments larges, la rangée du bas se chevauchait. */
+.fab{position:absolute;z-index:500;right:14px;bottom:20px;width:52px;height:52px;
+ border:0;border-radius:50%;display:flex;align-items:center;justify-content:center;
+ background:var(--brand);color:var(--brand-ink);
  box-shadow:0 8px 26px color-mix(in srgb,var(--brand) 42%,transparent);transition:transform .15s}
-.fab:active{transform:translateX(-50%) scale(.95)}
-.fab svg{width:19px;height:19px;stroke-width:2.4}
+.fab:active{transform:scale(.92)}
+.hood{position:absolute;z-index:500;left:14px;bottom:20px;height:46px;border:0;
+ border-radius:100px;padding:0 15px;font:inherit;font-size:13px;font-weight:660;
+ background:var(--surface);color:var(--ink);box-shadow:var(--shadow-lg);
+ display:flex;align-items:center;gap:7px;transition:transform .14s}
+.hood:active{transform:scale(.95)}
+.hood svg{width:17px;height:17px;stroke-width:2}
+.fab svg{width:24px;height:24px;stroke-width:2.4}
 
 /* ---- boutons ---- */
 .go{width:100%;padding:17px;background:var(--brand);color:var(--brand-ink);border:0;
@@ -155,7 +195,8 @@ nav button:active{transform:scale(.94)}
 
 /* ---- parcours ---- */
 .wiz{display:flex;flex-direction:column;height:100%}
-.wiz-top{display:flex;align-items:center;gap:12px;padding:6px 20px 12px;flex-shrink:0}
+.wiz-top{display:flex;align-items:center;gap:12px;flex-shrink:0;
+ padding:calc(env(safe-area-inset-top) + 10px) 20px 12px}
 .close{width:34px;height:34px;border-radius:50%;border:0;background:var(--surface-2);
  color:var(--ink-2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .close svg{width:16px;height:16px;stroke-width:2.4}
@@ -425,10 +466,16 @@ nav .nbadge.admin{background:var(--admin);color:var(--admin-ink)}
  background:var(--admin);color:var(--admin-ink);padding:3px 8px;border-radius:100px}
 .admin-panel .item:active{background:var(--admin-soft)}
 .act .clear{color:var(--admin);border-color:color-mix(in srgb,var(--admin) 35%,transparent)}
-.bell{position:relative;width:34px;height:34px;border-radius:50%;border:0;background:var(--surface-2);
- color:var(--ink-2);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .14s}
+/* elle flotte au-dessus des trois volets, donc tantôt sur une vidéo, tantôt sur
+   la carte, tantôt sur le fond de l'app : un fond translucide flouté tient dans
+   les trois cas, là où une couleur pleine en raterait au moins un */
+.bell{position:relative;width:38px;height:38px;border-radius:50%;border:0;
+ background:color-mix(in srgb,var(--surface) 80%,transparent);
+ -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+ box-shadow:0 2px 10px rgba(0,0,0,.28),0 0 0 1px color-mix(in srgb,var(--ink) 10%,transparent);
+ color:var(--ink);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:transform .14s}
 .bell:active{transform:scale(.9)}
-.bell svg{width:18px;height:18px}
+.bell svg{width:19px;height:19px}
 .bdot{position:absolute;top:1px;right:1px;min-width:16px;height:16px;border-radius:8px;
  background:var(--danger);color:var(--danger-ink);font-size:9.5px;font-weight:800;
  display:flex;align-items:center;justify-content:center;padding:0 4px;box-shadow:0 0 0 2px var(--bg)}
@@ -509,9 +556,7 @@ nav .nbadge.admin{background:var(--admin);color:var(--admin-ink)}
    Il passe SOUS .intro (1200) pour que la première visite s'explique avant que
    le navigateur ne demande l'accès à la caméra : une demande sans contexte se
    solde par un refus, et un refus est difficile à rattraper sur iOS. */
-.cam{position:fixed;inset:0;z-index:1150;background:#000;
- opacity:0;visibility:hidden;transition:opacity .3s ease,visibility .3s}
-.cam.on{opacity:1;visibility:visible}
+.cam{position:absolute;inset:0;background:#000;overflow:hidden}
 .cam video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;background:#000}
 .cam .veil{position:absolute;inset:0;pointer-events:none;
  background:linear-gradient(#000000a6,#0000 20%,#0000 52%,#000000cc)}
@@ -523,7 +568,7 @@ nav .nbadge.admin{background:var(--admin);color:var(--admin-ink)}
  text-shadow:0 1px 10px rgba(0,0,0,.55)}
 
 /* tout est en bas : l'app s'utilise dehors, à une main */
-.cam-bar{position:absolute;left:0;right:0;bottom:calc(env(safe-area-inset-bottom) + 94px);
+.cam-bar{position:absolute;left:0;right:0;bottom:76px;
  display:flex;align-items:center;justify-content:center;gap:46px}
 .shutter{width:76px;height:76px;border-radius:50%;flex-shrink:0;padding:0;cursor:pointer;
  border:5px solid #fff;background:#ffffff2e;
@@ -534,8 +579,7 @@ nav .nbadge.admin{background:var(--admin);color:var(--admin-ink)}
  display:flex;align-items:center;justify-content:center;transition:transform .12s ease}
 .cam-side svg{width:23px;height:23px;stroke-width:1.8}
 .cam-side:active{transform:scale(.9)}
-.cam-map{position:absolute;left:50%;transform:translateX(-50%);
- bottom:calc(env(safe-area-inset-bottom) + 28px);
+.cam-map{position:absolute;left:50%;transform:translateX(-50%);bottom:18px;
  border:0;background:#ffffff21;backdrop-filter:blur(6px);color:#fff;font:inherit;
  font-size:13.5px;font-weight:650;padding:10px 18px;border-radius:100px;cursor:pointer;
  display:flex;align-items:center;gap:7px}
@@ -561,29 +605,6 @@ nav .nbadge.admin{background:var(--admin);color:var(--admin-ink)}
 </head>
 <body>
 
-<div class="cam on" id="cam">
-  <video id="cam-v" playsinline webkit-playsinline muted autoplay></video>
-  <div class="veil"></div>
-  <span class="cam-mark"><svg viewBox="0 0 100 100"><use href="#i-logo"/></svg></span>
-  <div class="cam-hint">Un chat ? Photographie-le.</div>
-  <div class="cam-flash" id="cam-flash"></div>
-  <div class="cam-bar">
-    <button class="cam-side" id="cam-lib" aria-label="Choisir une photo">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><use href="#i-pic"/></svg></button>
-    <button class="shutter" id="shutter" aria-label="Prendre la photo"></button>
-    <button class="cam-side" id="cam-flip" aria-label="Changer de caméra">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><use href="#i-flip"/></svg></button>
-  </div>
-  <button class="cam-map" id="cam-map"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 14.5 12 8.5l6 6"/></svg>Voir la carte</button>
-  <input type="file" id="camfile" accept="image/*" style="display:none">
-  <div class="cam-deny" id="cam-deny">
-    <h2>Caméra indisponible</h2>
-    <p>CatMap n'a pas accès à l'appareil photo. Tu peux l'autoriser dans les
-      réglages de ton navigateur, ou partir d'une photo déjà prise.</p>
-    <button class="go" id="deny-lib">Choisir une photo</button>
-    <button class="ghost" id="deny-map">Aller à la carte</button>
-  </div>
-</div>
 
 <svg style="display:none">
 <symbol id="i-logo" viewBox="0 0 100 100">
@@ -665,18 +686,9 @@ nav .nbadge.admin{background:var(--admin);color:var(--admin-ink)}
 </svg>
 
 <div class="app">
-<header>
-  <span class="mark"><svg viewBox="0 0 100 100"><use href="#i-logo"/></svg></span>
-  <b>CatMap</b>
-  <button class="bell" id="bell" aria-label="Notifications">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-      stroke-linecap="round" stroke-linejoin="round"><use href="#i-bell"/></svg>
-    <span class="bdot" id="bdot" hidden></span></button>
-  <span class="lvl" id="hdr-lvl"></span>
-</header>
-<main>
+<div class="pager" id="pager">
 
-<section id="v-map" class="view on">
+<section class="pane" id="p-map" data-i="0">
   <div id="map"></div>
   <div class="map-ui">
     <button class="chip on" data-f="all">Tout</button>
@@ -684,9 +696,55 @@ nav .nbadge.admin{background:var(--admin);color:var(--admin-ink)}
     <button class="chip" data-f="lost">Perdus</button>
     <button class="chip" data-f="places">Lieux</button>
   </div>
+  <button class="hood" id="hood"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+    stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><use href="#i-paw"/></svg>Le quartier</button>
+  <button class="fab" id="fab" aria-label="Ajouter"><svg><use href="#i-plus"/></svg></button>
   <button class="locate" id="locate" aria-label="Me localiser"><svg><use href="#i-locate"/></svg></button>
-  <button class="fab" id="fab"><svg><use href="#i-plus"/></svg>Ajouter</button>
 </section>
+
+<section class="pane" id="p-cam" data-i="1">
+<div class="cam" id="cam">
+  <video id="cam-v" playsinline webkit-playsinline muted autoplay></video>
+  <div class="veil"></div>
+  <span class="cam-mark"><svg viewBox="0 0 100 100"><use href="#i-logo"/></svg></span>
+  <div class="cam-hint">Un chat ? Photographie-le.</div>
+  <div class="cam-flash" id="cam-flash"></div>
+  <div class="cam-bar">
+    <button class="cam-side" id="cam-lib" aria-label="Choisir une photo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><use href="#i-pic"/></svg></button>
+    <button class="shutter" id="shutter" aria-label="Prendre la photo"></button>
+    <button class="cam-side" id="cam-flip" aria-label="Changer de caméra">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><use href="#i-flip"/></svg></button>
+  </div>
+  <button class="cam-map" id="cam-mine"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 14.5 12 8.5l6 6"/></svg>Mes publications</button>
+  <input type="file" id="camfile" accept="image/*" style="display:none">
+  <div class="cam-deny" id="cam-deny">
+    <h2>Caméra indisponible</h2>
+    <p>CatMap n'a pas accès à l'appareil photo. Tu peux l'autoriser dans les
+      réglages de ton navigateur, ou partir d'une photo déjà prise.</p>
+    <button class="go" id="deny-lib">Choisir une photo</button>
+    <button class="ghost" id="deny-map">Aller à la carte</button>
+  </div>
+</div>
+</section>
+
+<section class="pane" id="p-me" data-i="2">
+  <header>
+    <span class="mark"><svg viewBox="0 0 100 100"><use href="#i-logo"/></svg></span>
+    <b>Mon profil</b>
+    <span class="lvl" id="hdr-lvl"></span>
+  </header>
+  <div class="pad" id="me-pad"></div>
+</section>
+
+</div>
+
+<div class="bellwrap">
+  <button class="bell" id="bell" aria-label="Notifications">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+      stroke-linecap="round" stroke-linejoin="round"><use href="#i-bell"/></svg>
+    <span class="bdot" id="bdot" hidden></span></button>
+</div>
 
 <section id="v-add" class="view"><div class="wiz">
   <div class="wiz-top">
@@ -811,14 +869,10 @@ nav .nbadge.admin{background:var(--admin);color:var(--admin-ink)}
   </div>
 </section>
 
-<section id="v-list" class="view"><div class="pad" id="list-pad"></div></section>
-<section id="v-me" class="view"><div class="pad" id="me-pad"></div></section>
-
-</main>
 <nav>
-  <button class="on" data-v="map"><svg><use href="#i-map"/></svg>Carte</button>
-  <button data-v="list"><svg><use href="#i-paw"/></svg>Le quartier</button>
-  <button data-v="me"><svg><use href="#i-star"/></svg>Moi</button>
+  <button data-i="0"><svg><use href="#i-map"/></svg>Carte</button>
+  <button class="on" data-i="1"><svg><use href="#i-cam"/></svg>Photo</button>
+  <button data-i="2"><svg><use href="#i-star"/></svg>Profil</button>
 </nav>
 </div>
 
@@ -851,6 +905,12 @@ nav .nbadge.admin{background:var(--admin);color:var(--admin-ink)}
   <p id="dg-sub"></p>
   <div id="dg-body"></div>
   <button class="go" id="dg-close">Fermer</button>
+</div></div>
+
+<div class="sheet" id="sh-list"><div class="card">
+  <div class="grab"></div>
+  <h2 id="list-h"></h2>
+  <div id="list-pad"></div>
 </div></div>
 
 <div class="sheet" id="sh-pick"><div class="card">
@@ -1006,7 +1066,7 @@ const OSM='https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const MAXPICS=4;
 
 let shots=[],pshots=[],color=null,breed=null,status=null,ptype=null,pos=null,
-    map=null,layer=null,pending=null,view='map',step=1,filter='all',tab='cats',
+    map=null,layer=null,pending=null,pane=1,step=1,filter='all',tab='cats',listScope='all',
     reportTarget=null;
 let cats=[],places=[];
 const photoCache=new Map();
@@ -1048,7 +1108,7 @@ function award(kind){
  if(kind==='obs'||kind==='found')me.obs++;
  if(kind==='place')me.places++;
  saveMe();paintLevel();
- if(view==='me')drawMe();
+ if(pane===2)drawMe();
  const after=levelOf(me.xp).n;
  return {gain:GAIN[kind]||0,levelUp:after!==before?after:null};
 }
@@ -1341,7 +1401,7 @@ function geo(){
  navigator.geolocation.getCurrentPosition(p=>{
   pos={lat:p.coords.latitude,lng:p.coords.longitude};
   updateBadge();maybeDigest();
-  if(view==='map')drawMap();
+  repaint();
   ['pickmap-cat','pickmap-place'].forEach(id=>{
    if(pickers[id]&&!pickers[id].touched){
     pickers[id].m.setView([pos.lat,pos.lng],17);pickers[id].mk.setLatLng([pos.lat,pos.lng])}});
@@ -1388,7 +1448,7 @@ async function addCat(){
   /* les photos d'abord : quand la fiche apparaît, ses images sont déjà en place */
   await pushPics(ref.id,shots);
   await setDoc(ref,data);
-  resetCat();go('map');celebrate(msg,award('cat'));
+  resetCat();closeView();setPane(0);celebrate(msg,award('cat'));
  }catch{toast("Envoi impossible — vérifie ta connexion")}
 }
 
@@ -1398,7 +1458,7 @@ $('#m-yes').onclick=async()=>{
  const upd={seen:increment(1),last:new Date().toISOString(),lat:at.lat,lng:at.lng,spots};
  if(status==='Perdu')upd.status='Perdu';
  try{await updateDoc(doc(db,'cats',k.id),upd);
-  $('#sh-match').classList.remove('on');resetCat();go('map');
+  $('#sh-match').classList.remove('on');resetCat();closeView();setPane(0);
   celebrate('Observation ajoutée',award('obs'));
  }catch{toast('Impossible pour le moment')}};
 $('#m-no').onclick=()=>{$('#sh-match').classList.remove('on');addCat()};
@@ -1430,24 +1490,63 @@ $('#p-go').onclick=async()=>{
   ptype=null;pshots=[];$('#p-note').value='';
   document.querySelectorAll('#ptypes .st').forEach(x=>x.classList.remove('on'));
   $('#p-go').disabled=true;resetPicker('pickmap-place');drawPShots();
-  go('map');celebrate('Lieu ajouté à la carte',award('place'));
+  closeView();setPane(0);celebrate('Lieu ajouté à la carte',award('place'));
  }catch{toast("Envoi impossible — vérifie ta connexion")}};
 
-/* ---------- navigation ---------- */
-function go(v){
- view=v;
+/* ---------- navigation ----------
+   Deux choses distinctes : les trois volets, qu'on parcourt au doigt et dont on
+   ne sort jamais, et les couches (questionnaire, ajout de lieu) qui passent
+   par-dessus et qu'on termine ou qu'on abandonne. */
+const PANES=3;
+function setPane(i,smooth){
+ const pg=$('#pager');
+ pg.scrollTo({left:i*pg.clientWidth,behavior:smooth===false?'auto':'smooth'});
+}
+function paneChanged(i){
+ if(i===pane)return;
+ pane=i;
+ document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',+b.dataset.i===i));
+ /* le flux ne tourne que sur le volet photo : ailleurs, c'est de la batterie
+    brûlée et le témoin d'enregistrement allumé pour rien */
+ if(i===1)camStart();else camStop();
+ if(i===0)drawMap();
+ if(i===2)drawMe();
+}
+/* on lit le volet courant à l'observation plutôt qu'au scroll : ça suit aussi
+   bien le doigt qu'un défilement programmé, sans minuteur ni approximation */
+const paneObs=new IntersectionObserver(es=>es.forEach(e=>{
+ if(e.isIntersecting)paneChanged(+e.target.dataset.i);
+}),{root:$('#pager'),threshold:.6});
+document.querySelectorAll('.pane').forEach(el=>paneObs.observe(el));
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>setPane(+b.dataset.i));
+
+/* couches */
+function openView(v){
  document.querySelectorAll('.view').forEach(x=>x.classList.toggle('on',x.id==='v-'+v));
- document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));
- if(v==='map')drawMap();
- if(v==='list')drawList();
- if(v==='me')drawMe();
  if(v==='place')openPicker('pickmap-place');
 }
-document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>go(b.dataset.v));
+function closeView(){document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'))}
+
 $('#fab').onclick=()=>$('#sh-pick').classList.add('on');
-$('#pick-place').onclick=()=>{$('#sh-pick').classList.remove('on');go('place')};
-$('#add-x').onclick=()=>go('map');
-$('#place-x').onclick=()=>go('map');
+$('#pick-place').onclick=()=>{$('#sh-pick').classList.remove('on');openView('place')};
+$('#add-x').onclick=()=>{closeView();setPane(1,false)};
+$('#place-x').onclick=()=>{closeView();setPane(0,false)};
+
+/* la liste : le quartier entier depuis la carte, ses propres fiches depuis le
+   volet photo. Même rendu, deux portées. */
+function openList(scope,which){
+ listScope=scope;if(which)tab=which;
+ drawList();$('#sh-list').classList.add('on');
+}
+$('#hood').onclick=()=>openList('all');
+$('#cam-mine').onclick=()=>openList('mine');
+
+/* repeint ce qui est à l'écran, et rien d'autre */
+function repaint(){
+ if(pane===0)drawMap();
+ if(pane===2)drawMe();
+ if($('#sh-list').classList.contains('on'))drawList();
+}
 
 /* ---------- carte ---------- */
 function drawMap(){
@@ -1532,11 +1631,11 @@ function notifs(){
  const nc=cats.filter(k=>k.first>since&&near(k)&&k.status!=='Perdu');
  if(nc.length)out.push({c:'var(--brand)',i:'i-paw',fresh:true,
   b:`${nc.length} nouveau${nc.length>1?'x':''} chat${nc.length>1?'s':''} près de toi`,
-  s:'Recensés par tes voisins',go:()=>{$('#sh-digest').classList.remove('on');go('list')}});
+  s:'Recensés par tes voisins',go:()=>{$('#sh-digest').classList.remove('on');openList('all','cats')}});
  const np=places.filter(p=>p.first>since&&near(p));
  if(np.length)out.push({c:'var(--gold)',i:'i-bowl',fresh:true,
   b:`${np.length} nouveau${np.length>1?'x':''} lieu${np.length>1?'x':''} près de toi`,
-  s:'Gamelle, eau, abri ou danger',go:()=>{$('#sh-digest').classList.remove('on');tab='places';go('list')}});
+  s:'Gamelle, eau, abri ou danger',go:()=>{$('#sh-digest').classList.remove('on');openList('all','places')}});
  return out;
 }
 
@@ -1575,29 +1674,38 @@ function maybeDigest(){
 /* ---------- le quartier ---------- */
 const nearLost=()=>pos?cats.filter(k=>k.status==='Perdu'&&dist(pos.lat,pos.lng,k.lat,k.lng)<RADIUS):[];
 function updateBadge(){
- const btn=document.querySelector('nav button[data-v="list"]');
- const old=btn.querySelector('.nbadge');if(old)old.remove();
- const n=nearLost().length;
- if(n){const b=document.createElement('span');b.className='nbadge';b.textContent=n;btn.appendChild(b)}
- /* pastille admin : les signalements à traiter, visibles dès l'ouverture */
- const mb=document.querySelector('nav button[data-v="me"]');
- const om=mb.querySelector('.nbadge');if(om)om.remove();
- if(isAdmin()){
-  const f=pendingFlags().length;
-  if(f){const b=document.createElement('span');b.className='nbadge admin';b.textContent=f;mb.appendChild(b)}}
+ /* Les chats perdus se comptent sur l'onglet Carte — c'est là qu'on va les
+    chercher — et les signalements à traiter sur Profil, où vit la modération. */
+ const put=(sel,n,cls)=>{
+  const btn=document.querySelector(sel);if(!btn)return;
+  const old=btn.querySelector('.nbadge');if(old)old.remove();
+  if(!n)return;
+  const b=document.createElement('span');b.className='nbadge'+(cls?' '+cls:'');
+  b.textContent=n;btn.appendChild(b);
+ };
+ put('nav button[data-i="0"]',nearLost().length);
+ put('nav button[data-i="2"]',isAdmin()?pendingFlags().length:0,'admin');
 }
 function drawList(){
- const al=nearLost().length;
- const head=`<div class="alert${al?' on':''}"><svg><use href="#i-alert"/></svg>
+ /* deux portées pour le même rendu : le quartier entier depuis la carte, ses
+    propres fiches depuis le volet photo. Les fiches d'avant les comptes n'ont
+    pas d'uid : elles n'appartiennent à personne et ne sortent jamais en « mine ». */
+ const mine=listScope==='mine',me_=uid();
+ const kk=mine?cats.filter(k=>k.uid&&k.uid===me_):cats;
+ const pp=mine?places.filter(q=>q.uid&&q.uid===me_):places;
+ $('#list-h').textContent=mine?'Mes publications':'Le quartier';
+
+ const al=mine?0:nearLost().length;
+ const head=(al?`<div class="alert on"><svg><use href="#i-alert"/></svg>
    <div><b>${al} chat${al>1?'s':''} perdu${al>1?'s':''} près de toi</b>
-   <span>Ouvre sa fiche si tu l'aperçois — ça aide vraiment son maître.</span></div></div>
-  <div class="seg"><button data-t="cats" class="${tab==='cats'?'on':''}">Chats · ${cats.length}</button>
-   <button data-t="places" class="${tab==='places'?'on':''}">Lieux · ${places.length}</button></div>`;
+   <span>Ouvre sa fiche si tu l'aperçois — ça aide vraiment son maître.</span></div></div>`:'')
+  +`<div class="seg"><button data-t="cats" class="${tab==='cats'?'on':''}">Chats · ${kk.length}</button>
+   <button data-t="places" class="${tab==='places'?'on':''}">Lieux · ${pp.length}</button></div>`;
  let body;
  if(tab==='cats'){
   /* les chats perdus passent devant : c'est eux qui ont besoin d'aide */
   const rank=k=>k.status==='Perdu'?0:k.status==='Retrouvé'?2:1;
-  const c=[...cats].sort((a,b)=>rank(a)-rank(b)||new Date(b.last)-new Date(a.last));
+  const c=[...kk].sort((a,b)=>rank(a)-rank(b)||new Date(b.last)-new Date(a.last));
   body=c.length?`<div class="list">${c.map(k=>{const t=territory(k),pic=k.thumb||k.photo;return`
    <div class="item${k.status==='Retrouvé'?' found':''}" data-id="${k.id}">
     <div class="dot" style="background:${COLORS[k.color]||'#999'}${(pic&&!flagged(k))?`;background-image:url(${pic})`:''}">
@@ -1608,9 +1716,11 @@ function drawList(){
     <span class="badge ${k.status==='Perdu'?'lost':k.status==='Retrouvé'?'ok':''}">${esc(k.status)}</span>
    </div>`}).join('')}</div>`
   :`<div class="empty"><span class="ico"><svg><use href="#i-paw"/></svg></span>
-    <b>Aucun chat pour l'instant</b><span>Sois le premier à en recenser un près de chez toi.</span></div>`;
+    <b>${mine?"Tu n'as encore recensé aucun chat":'Aucun chat pour l\'instant'}</b>
+    <span>${mine?'Photographie-en un depuis le volet du milieu, il apparaîtra ici.'
+      :'Sois le premier à en recenser un près de chez toi.'}</span></div>`;
  }else{
-  const p=[...places].sort((a,b)=>pos?dist(pos.lat,pos.lng,a.lat,a.lng)-dist(pos.lat,pos.lng,b.lat,b.lng):0);
+  const p=[...pp].sort((a,b)=>pos?dist(pos.lat,pos.lng,a.lat,a.lng)-dist(pos.lat,pos.lng,b.lat,b.lng):0);
   body=p.length?`<div class="list">${p.map(q=>`
    <div class="item" data-pid="${q.id}">
     <div class="dot" style="background:${PCOL[q.type]}"><svg viewBox="0 0 24 24" fill="none"
@@ -1619,7 +1729,8 @@ function drawList(){
      <small>${q.note?esc(q.note)+' · ':''}${q.ok} confirmation${q.ok>1?'s':''}${pos?' · à '+fmt(dist(pos.lat,pos.lng,q.lat,q.lng)):''}</small></div>
    </div>`).join('')}</div>`
   :`<div class="empty"><span class="ico"><svg><use href="#i-bowl"/></svg></span>
-    <b>Aucun lieu répertorié</b><span>Une gamelle, un point d'eau, un abri, une route dangereuse.</span></div>`;
+    <b>${mine?"Tu n'as encore ajouté aucun lieu":'Aucun lieu répertorié'}</b>
+    <span>Une gamelle, un point d'eau, un abri, une route dangereuse.</span></div>`;
  }
  $('#list-pad').innerHTML=head+body;
  document.querySelectorAll('.seg button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;drawList()});
@@ -1830,7 +1941,7 @@ $('#intro-go').onclick=()=>{
  try{localStorage.setItem(INTRO,'1')}catch{}
  $('#intro').classList.remove('on');
  /* la demande d'accès à la caméra arrive maintenant, une fois l'app expliquée */
- openCam()};
+ setPane(1,false);camStart()};
 $('#intro-legal').onclick=e=>{e.preventDefault();$('#sh-legal').classList.add('on')};
 
 /* ---------- comptes ----------
@@ -1853,9 +1964,7 @@ onAuthStateChanged(auth,async u=>{
     places:me.places,name:me.name||'',since:new Date().toISOString()},{merge:true});
   }
  }catch{}
- paintLevel();
- if(view==='me')drawMe();
- if(view==='map')drawMap();
+ paintLevel();repaint();
 });
 
 const authErr=e=>({
@@ -1912,7 +2021,7 @@ async function doSignOut(){
  try{await signOut(auth);
   me={xp:0,cats:0,obs:0,places:0,name:''};
   try{localStorage.removeItem(XP_KEY)}catch{}
-  paintLevel();$('#sh-settings').classList.remove('on');go('map');
+  paintLevel();$('#sh-settings').classList.remove('on');drawMe();
   toast('Déconnecté — une session anonyme a repris');
  }catch{toast('Impossible pour le moment')}
 }
@@ -1924,14 +2033,14 @@ async function doDeleteAccount(){
   me={xp:0,cats:0,obs:0,places:0,name:''};
   try{localStorage.removeItem(XP_KEY)}catch{}
   $('#sh-confirm').classList.remove('on');$('#sh-settings').classList.remove('on');
-  paintLevel();go('map');toast('Compte supprimé');
+  paintLevel();drawMe();toast('Compte supprimé');
  }catch(e){toast(authErr(e))}
 }
 async function saveName(){
  const n=$('#s-name').value.trim().slice(0,40);
  me.name=n;saveMe();
  if(user&&named())updateProfile(user,{displayName:n}).catch(()=>{});
- toast('Nom enregistré');if(view==='me')drawMe();
+ toast('Nom enregistré');repaint();
 }
 $('#s-name-save').onclick=saveName;
 $('#s-signout').onclick=doSignOut;
@@ -1960,12 +2069,11 @@ async function deleteOwn(kind,id,pics){
 }
 
 /* ---------- viseur ----------
-   L'app s'ouvre ici plutôt que sur un écran d'attente. Le flux est coupé dès
-   qu'on quitte l'écran ou que l'app passe en arrière-plan : une caméra laissée
+   Le volet du milieu, et l'accueil de l'app. Le flux est coupé dès qu'on glisse
+   vers un autre volet ou que l'app passe en arrière-plan : une caméra laissée
    ouverte vide la batterie et garde le témoin d'enregistrement allumé. */
 const CAMOFF='catmap.camoff.v1';
 let camStream=null,camFacing='environment',camBusy=false;
-const camShown=()=>$('#cam').classList.contains('on');
 
 function camStop(){
  if(camStream)camStream.getTracks().forEach(t=>t.stop());
@@ -1990,16 +2098,12 @@ async function camStart(){
  }
  camBusy=false;
 }
-function openCam(){$('#cam').classList.add('on');camStart()}
-function closeCam(){$('#cam').classList.remove('on');camStop()}
-const toMap=()=>{closeCam();go('map')};
-
 /* une photo prise ici ouvre toujours une nouvelle fiche : on repart de zéro,
    puis on saute la première étape du questionnaire, qui vient d'être faite. */
 function startCatFrom(src){
  resetCat();
  shots.push({full:resize(src,900,.75),thumb:resize(src,120,.5),dark:meanLum(src)<58});
- drawShots();closeCam();go('add');showStep(2);
+ drawShots();openView('add');showStep(2);
 }
 
 $('#shutter').onclick=()=>{
@@ -2023,48 +2127,61 @@ $('#camfile').onchange=e=>{
  r.onload=()=>{img.onload=()=>startCatFrom(img);img.src=r.result};
  r.readAsDataURL(f);e.target.value='';
 };
-$('#cam-map').onclick=toMap;
-$('#deny-map').onclick=toMap;
-/* balayage vers le haut : la carte remonte du bas, comme le dit le chevron */
+$('#deny-map').onclick=()=>setPane(0);
+/* balayage vers le haut : ses publications remontent du bas, comme le dit le
+   chevron. Le geste ne doit pas partir d'un bouton, sinon on ouvre le panneau
+   en voulant déclencher. */
 (function camSwipe(){
- const el=$('#cam');let y0=null;
- el.addEventListener('touchstart',e=>{y0=e.touches[0].clientY},{passive:true});
+ const el=$('#cam');let y0=null,x0=0;
+ el.addEventListener('touchstart',e=>{
+  if(e.target.closest('button')){y0=null;return}
+  y0=e.touches[0].clientY;x0=e.touches[0].clientX},{passive:true});
  el.addEventListener('touchend',e=>{
   if(y0===null)return;
-  const dy=e.changedTouches[0].clientY-y0;y0=null;
-  if(dy<-70)toMap();
+  const dy=e.changedTouches[0].clientY-y0,dx=e.changedTouches[0].clientX-x0;y0=null;
+  /* un geste en diagonale appartient au pager : on ne prend que ce qui monte
+     franchement plus qu'il ne dérive sur le côté */
+  if(dy<-70&&Math.abs(dy)>Math.abs(dx)*1.5)openList('mine');
  },{passive:true});
 })();
 document.addEventListener('visibilitychange',()=>{
- if(document.hidden)camStop();else if(camShown())camStart();
+ if(document.hidden)camStop();else if(pane===1)camStart();
 });
-/* « Ajouter » sur la carte revient au viseur : une seule façon d'ajouter un chat */
-$('#pick-cat').onclick=()=>{$('#sh-pick').classList.remove('on');openCam()};
+/* « Un chat » ramène au viseur : une seule façon d'ajouter un chat */
+$('#pick-cat').onclick=()=>{$('#sh-pick').classList.remove('on');setPane(1)};
 
 paintLevel();
-/* la carte se monte tout de suite, derrière le viseur : quand on la rejoint
-   elle est déjà prête, sans attendre un clic de navigation ni les données */
+/* la carte se monte tout de suite, dans son volet hors écran : quand on y glisse
+   elle est déjà prête, sans attendre les données */
 drawMap();
+drawMe();
 
-/* Ce qui s'ouvre : le viseur, sauf si la caméra a déjà été refusée — auquel cas
-   la carte, qui reste le second visage de l'app. À la toute première visite, la
-   présentation passe d'abord et n'ouvre le viseur qu'une fois lue. */
+/* Le volet d'accueil est celui de l'appareil photo. On s'y place sans animation
+   avant le premier rendu, sinon l'app démarre visiblement sur la carte puis
+   glisse — on verrait la couture.
+   Exceptions : caméra déjà refusée, ou toute première visite (la présentation
+   passe devant, et la demande d'accès n'arrive qu'une fois lue). */
 let camRefused=false;try{camRefused=!!localStorage.getItem(CAMOFF)}catch{}
-if(camRefused||$('#intro').classList.contains('on'))$('#cam').classList.remove('on');
-else camStart();
+const firstPane=camRefused?0:1;
+(function placePager(){
+ const pg=$('#pager');
+ const put=()=>{pg.scrollLeft=firstPane*pg.clientWidth};
+ put();requestAnimationFrame(put);
+ addEventListener('load',put);
+ /* une rotation ou l'apparition du clavier change la largeur : sans ça le
+    scroll-snap laisse deux volets à moitié visibles */
+ addEventListener('resize',()=>{pg.scrollLeft=pane*pg.clientWidth});
+})();
+pane=firstPane;
+document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',+b.dataset.i===firstPane));
+if(firstPane===1&&!$('#intro').classList.contains('on'))camStart();
 onSnapshot(catsCol,snap=>{
  cats=snap.docs.map(d=>({id:d.id,...d.data()}));
- loaded.cats=true;updateBadge();paintBell();maybeDigest();
- if(view==='map')drawMap();
- if(view==='list')drawList();
- if(view==='me')drawMe();
+ loaded.cats=true;updateBadge();paintBell();maybeDigest();repaint();
 },()=>toast('Connexion au serveur impossible — mode hors ligne'));
 onSnapshot(placesCol,snap=>{
  places=snap.docs.map(d=>({id:d.id,...d.data()}));
- loaded.places=true;paintBell();maybeDigest();
- if(view==='map')drawMap();
- if(view==='list')drawList();
- if(view==='me')drawMe();
+ loaded.places=true;paintBell();maybeDigest();repaint();
 },()=>{loaded.places=true});
 
 if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});

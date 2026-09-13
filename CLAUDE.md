@@ -160,7 +160,7 @@ Rester en vanilla JS tant que ça tient : pas de framework, pas de bundler, pas 
 
 Le service worker est en network-first sur le HTML et le manifeste, cache-first sur le reste. Si tu changes cette logique, vérifie que les mises à jour arrivent toujours sur le téléphone sans désinstaller l'app — c'est un bug qui a déjà été rencontré.
 
-L'app est utilisée dehors, à une main, souvent au soleil. Cibles tactiles larges, contrastes francs, aucune action critique en haut de l'écran.
+L'app est utilisée dehors, à une main, souvent au soleil. Cibles tactiles larges, contrastes francs, aucune action critique en haut de l'écran — le haut est réservé à ce qui s'affiche (filtres, titre, cloche).
 
 ## Déploiement
 
@@ -187,38 +187,85 @@ l'activité sur ses propres signalements, et les nouveautés du quartier. Elle
 s'ouvre seule au lancement s'il y a du neuf. E-mail et push resteraient de toute
 façon impossibles sur Spark (Cloud Functions = plan Blaze).
 
+## Structure : trois volets
+
+L'app est un carrousel horizontal de trois volets, à la manière de Snap. On passe
+de l'un à l'autre **au doigt**, et on n'en sort jamais :
+
+1. **La carte** — l'atlas, ses filtres, l'ajout d'un lieu, et « Le quartier »
+2. **L'appareil photo** — l'accueil, et l'accès à « Mes publications »
+3. **Le profil** — rang, XP, objectifs, compte, modération
+
+Le défilement est le **scroll-snap natif** du navigateur (`.pager` / `.pane`),
+pas une simulation en JS : l'inertie, le rebond et la vitesse sont ceux du
+système, et rien ne se désynchronise. `scroll-snap-stop:always` interdit de
+sauter par-dessus l'appareil photo d'un coup de doigt rapide. Le volet courant se
+lit avec un `IntersectionObserver` sur `.pager`, pas au `scroll` : ça suit aussi
+bien le doigt qu'un défilement programmé, sans minuteur ni seuil arbitraire.
+
+**La carte capte le doigt pour elle** (`#map{touch-action:none}`), sinon la faire
+glisser ferait aussi défiler le volet dessous et on ne saurait jamais lequel des
+deux bouge. C'est pourquoi **la barre du bas doit rester** : depuis la carte,
+c'est le seul chemin vers les autres volets.
+
+Ce qui n'est pas un volet : le questionnaire et l'ajout de lieu (`.view`, couches
+plein écran par-dessus tout), et les panneaux (`.sheet`). Ce sont des parcours
+qu'on termine ou qu'on abandonne, pas des destinations.
+
+La cloche des notifications flotte (`.bellwrap`, `position:fixed`) au-dessus des
+trois volets : tantôt sur une vidéo, tantôt sur la carte, tantôt sur le fond de
+l'app. D'où son fond translucide flouté — une couleur pleine raterait au moins
+un des trois cas.
+
 ## Viseur d'ouverture
 
-**L'app s'ouvre sur l'appareil photo, pas sur la carte.** Croiser un chat et le
+**L'app s'ouvre sur l'appareil photo, volet du milieu.** Croiser un chat et le
 photographier doit tenir en un geste : un écran d'attente, une carte à traverser
-ou un menu à ouvrir suffisent à faire renoncer. Le viseur (`.cam`, plein écran)
-sert aussi de couverture au démarrage — la carte se monte derrière lui et est
-prête quand on la rejoint. C'est ce qui a remplacé l'ancienne animation
-d'ouverture, jugée inutile : le viseur n'a rien à annoncer, il est déjà l'app.
+ou un menu à ouvrir suffisent à faire renoncer. Le viseur sert aussi de couverture
+au démarrage — la carte se monte dans son volet hors écran et est prête quand on y
+glisse. C'est ce qui a remplacé l'ancienne animation d'ouverture, jugée inutile :
+le viseur n'a rien à annoncer, il est déjà l'app.
+
+On se place sur ce volet **sans animation avant le premier rendu** (`scrollLeft`
+direct, pas `scrollTo`), sinon l'app démarre visiblement sur la carte puis glisse,
+et on voit la couture.
 
 Depuis le viseur : le déclencheur, la galerie, le changement de caméra, et
-« Voir la carte » (ou un balayage vers le haut). Une photo prise ici ouvre
-toujours une **nouvelle** fiche : `startCatFrom()` fait `resetCat()` puis saute
-directement à l'étape « Cadre sa tête », la première étape venant d'être faite.
-Le bouton « Ajouter » de la carte revient au viseur : il n'y a qu'une façon
-d'ajouter un chat.
+« Mes publications » (bouton, ou balayage vers le haut — un geste en diagonale
+appartient au pager et ne doit pas l'ouvrir). Une photo prise ici ouvre toujours
+une **nouvelle** fiche : `startCatFrom()` fait `resetCat()` puis saute directement
+à « Sa couleur », la première étape venant d'être faite. « Un chat » depuis la
+carte ramène ici : il n'y a qu'une façon d'ajouter un chat.
 
 Trois règles à ne pas défaire :
 
-- **Le flux est coupé** dès qu'on quitte le viseur et sur `visibilitychange`.
-  Une caméra laissée ouverte vide la batterie et garde le témoin
-  d'enregistrement allumé — les utilisateurs le remarquent et désinstallent.
-- **Le viseur passe sous `.intro`** (z-index 1150 contre 1200). À la première
-  visite, la présentation s'affiche d'abord et n'ouvre le viseur qu'une fois lue :
-  demander l'accès à la caméra sans avoir rien expliqué se solde par un refus,
-  et sur iOS un refus ne se rattrape que dans les réglages du système.
+- **Le flux est coupé** dès qu'on quitte le volet (`paneChanged`) et sur
+  `visibilitychange`. Une caméra laissée ouverte vide la batterie et garde le
+  témoin d'enregistrement allumé — les utilisateurs le remarquent et désinstallent.
+- **Le viseur passe sous `.intro`.** À la première visite, la présentation
+  s'affiche d'abord et ne démarre le flux qu'une fois lue : demander l'accès à la
+  caméra sans avoir rien expliqué se solde par un refus, et sur iOS un refus ne se
+  rattrape que dans les réglages du système.
 - **Un refus n'enferme jamais.** `catmap.camoff.v1` mémorise l'échec : l'écran
-  propose la galerie et la carte, et les ouvertures suivantes se font sur la
-  carte plutôt que sur un viseur noir. La clé est effacée dès qu'un accès
-  réussit. Même chemin pour un appareil sans caméra ou une page non sécurisée.
+  propose la galerie et la carte, et les ouvertures suivantes se font sur le volet
+  carte plutôt que sur un viseur noir. La clé est effacée dès qu'un accès réussit.
+  Même chemin pour un appareil sans caméra ou une page non sécurisée.
 
 `getUserMedia` ne fonctionne dans une PWA installée sur iOS qu'à partir d'iOS
 16.4 ; en dessous, c'est le repli ci-dessus qui s'applique.
+
+## La liste : deux portées
+
+`drawList()` sert deux surfaces avec le même rendu, via `listScope` :
+
+- **« Le quartier »** (depuis la carte) — tout ce qui est recensé, chats perdus
+  en tête, avec la bannière des perdus à proximité
+- **« Mes publications »** (depuis l'appareil photo) — seulement ses propres
+  fiches, `uid` à l'appui
+
+Les fiches d'avant les comptes n'ont pas d'`uid` : elles n'appartiennent à
+personne et ne sortent jamais en portée « mine ». Ne pas les rattacher d'office à
+qui les consulte.
 
 ## Croquis de chat sur la carte
 
