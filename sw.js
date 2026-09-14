@@ -1,4 +1,7 @@
-const CACHE = 'catmap-v2';
+/* Les icônes sont servies depuis le cache en priorité : tant que ce nom ne
+   change pas, un téléphone qui a déjà installé l'app continue de servir les
+   anciennes. Il faut donc le bousculer à CHAQUE changement d'icône. */
+const CACHE = 'catmap-v3';
 const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {

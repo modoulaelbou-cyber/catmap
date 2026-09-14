@@ -160,6 +160,13 @@ Rester en vanilla JS tant que ça tient : pas de framework, pas de bundler, pas 
 
 Le service worker est en network-first sur le HTML et le manifeste, cache-first sur le reste. Si tu changes cette logique, vérifie que les mises à jour arrivent toujours sur le téléphone sans désinstaller l'app — c'est un bug qui a déjà été rencontré.
 
+**Les icônes étant en cache-first, il faut incrémenter `CACHE` dans `sw.js` à
+chaque fois qu'elles changent**, sinon un téléphone qui a déjà installé l'app
+continue de servir les anciennes indéfiniment. Ça s'est produit : le logo était
+correct dans le dépôt et faux sur le téléphone. Sur iOS, l'icône de l'écran
+d'accueil est en plus figée par le système — il faut retirer l'app de l'écran
+d'accueil et la rajouter pour la voir changer.
+
 L'app est utilisée dehors, à une main, souvent au soleil. Cibles tactiles larges, contrastes francs, aucune action critique en haut de l'écran — le haut est réservé à ce qui s'affiche (filtres, titre, cloche).
 
 ## Déploiement
@@ -276,6 +283,17 @@ Trois règles à ne pas défaire :
 Les fiches d'avant les comptes n'ont pas d'`uid` : elles n'appartiennent à
 personne et ne sortent jamais en portée « mine ». Ne pas les rattacher d'office à
 qui les consulte.
+
+## Couleurs de la carte
+
+Les tuiles OpenStreetMap gardent **leurs couleurs** — le vert des parcs, le bleu
+de l'eau — simplement calmées pour que les chats restent le plus coloré à
+l'écran. Une première version les désaturait à 95 % : la carte était morte, et
+c'est ce qui donnait à l'app son air de maquette.
+
+En thème sombre, `invert(1)` seul retournerait aussi les teintes : le vert
+virerait au mauve et l'eau à l'orange. Le `hue-rotate(180deg)` qui suit les
+remet d'aplomb. **Ne jamais retirer l'un sans l'autre.**
 
 ## Croquis de chat sur la carte
 
