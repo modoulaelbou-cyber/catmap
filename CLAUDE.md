@@ -286,10 +286,17 @@ qui les consulte.
 
 ## Couleurs de la carte
 
-Les tuiles OpenStreetMap gardent **leurs couleurs** — le vert des parcs, le bleu
-de l'eau — simplement calmées pour que les chats restent le plus coloré à
-l'écran. Une première version les désaturait à 95 % : la carte était morte, et
-c'est ce qui donnait à l'app son air de maquette.
+Les tuiles OpenStreetMap sont **saturées au-delà de leur rendu d'origine**
+(`saturate(1.45)` en clair, `1.6` en sombre) : vert franc pour les bois et les
+parcs, bleu net pour l'eau. La palette d'OSM est volontairement pâle, et deux
+versions successives ont été jugées trop fades — d'abord une désaturation à 95 %
+qui rendait la carte morte, puis un simple retour aux couleurs d'origine. C'est
+au-dessus de 1.4 que la carte devient gaie.
+
+Plafond à ne pas dépasser : vers `1.8` en clair et `2.2` en sombre, les routes
+jaunes et oranges d'OSM prennent le dessus et entrent en concurrence avec les
+chats roux. C'est la seule contrainte réelle — les marqueurs doivent rester ce
+qu'il y a de plus coloré à l'écran.
 
 En thème sombre, `invert(1)` seul retournerait aussi les teintes : le vert
 virerait au mauve et l'eau à l'orange. Le `hue-rotate(180deg)` qui suit les

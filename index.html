@@ -123,7 +123,7 @@ nav button:active{transform:scale(.94)}
 /* On garde les couleurs d'OpenStreetMap — le vert des parcs, le bleu de l'eau —
    en les calmant juste assez pour que les chats restent le plus coloré à
    l'écran. Tout désaturer rendait la carte morte. */
-.leaflet-tile-pane{filter:saturate(.82) brightness(1.02) contrast(.97)}
+.leaflet-tile-pane{filter:saturate(1.45) brightness(1.04) contrast(1.02)}
 @media (prefers-color-scheme:dark){
  /* après inversion le fond et les routes retombent tous les deux près du noir :
     on remonte la luminosité puis on réduit le contraste pour les redécoller */
@@ -131,7 +131,7 @@ nav button:active{transform:scale(.94)}
     mauve et l'eau à l'orange. Le `hue-rotate(180deg)` qui suit les remet
     d'aplomb — c'est ce qui permet d'avoir un fond sombre AVEC des parcs verts
     et de l'eau bleue. Ne pas retirer l'un sans l'autre. */
- .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) saturate(.85) brightness(1.02) contrast(.85)}
+ .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) saturate(1.6) brightness(1.06) contrast(.9)}
 }
 .leaflet-control-attribution{font-size:9px!important;
  background:color-mix(in srgb,var(--surface) 82%,transparent)!important;
