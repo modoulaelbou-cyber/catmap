@@ -199,7 +199,17 @@ de l'un à l'autre **au doigt**, et on n'en sort jamais :
 Le défilement est le **scroll-snap natif** du navigateur (`.pager` / `.pane`),
 pas une simulation en JS : l'inertie, le rebond et la vitesse sont ceux du
 système, et rien ne se désynchronise. `scroll-snap-stop:always` interdit de
-sauter par-dessus l'appareil photo d'un coup de doigt rapide. Le volet courant se
+sauter par-dessus l'appareil photo d'un coup de doigt rapide.
+
+**`setPane()` fait un saut direct, sans glissement animé, et c'est délibéré.**
+Deux façons de l'animer ont été essayées et échouent : `scrollTo({behavior:
+'smooth'})` est purement ignoré sur un conteneur à aimantation obligatoire, et
+une animation image par image dépend de `requestAnimationFrame`, qui se met en
+pause dès que l'onglet passe en arrière-plan — le bouton ne ferait alors plus
+rien. La barre du bas étant le seul chemin hors du volet carte, elle doit marcher
+en toutes circonstances. `setPane()` bascule aussi l'état **tout de suite** au
+lieu d'attendre l'observateur, qui est suspendu dans les mêmes conditions ;
+l'observateur ne sert qu'au glissement du doigt. Le volet courant se
 lit avec un `IntersectionObserver` sur `.pager`, pas au `scroll` : ça suit aussi
 bien le doigt qu'un défilement programmé, sans minuteur ni seuil arbitraire.
 
@@ -297,10 +307,24 @@ de `mask`.
 
 ## Logo
 
-`_icon.svg` est la source unique du logo : chat assis de profil, crème sur
-anthracite, avec un repère de carte indigo. Il est aussi inline dans
-`index.html` comme `<symbol id="i-logo">` — utilisé dans l'en-tête, l'écran
-d'accueil et l'ouverture. Modifier les deux ensemble.
+`_icon.svg` est la source unique : chat assis de profil **tourné à droite**,
+crème `#f6f4f0` sur anthracite `#221f1c`, avec un repère de carte indigo
+`#3b30d9` en bas à droite, chevauchant le poitrail. **Le trou du repère est
+crème, pas noir** — c'est ce qui le détache du fond. Le même dessin est inline
+dans `index.html` comme `<symbol id="i-logo">`, avec les couleurs passées en
+variables CSS. **Modifier les deux ensemble.**
+
+Le dessin a été tracé à l'œil d'après une image fournie par le porteur du projet.
+Trois choses portent la ressemblance, dans l'ordre :
+
+1. **Les deux triangles noirs**, en haut à gauche et en bas à gauche. C'est le
+   cadrage serré qui fait l'image — combler l'un des deux et le chat devient une
+   vignette centrée quelconque.
+2. **Le profil de la face** : front presque vertical, léger creux au stop, museau
+   court et rond, encoche nette sous la truffe, menton marqué. Un museau qui
+   s'effile donne un renard.
+3. **La taille de la tête** par rapport au corps. Le premier essai la faisait
+   trop petite et le porteur a dit, à juste titre, que ce n'était pas son dessin.
 
 Les PNG (`icon-192`, `icon-512`) sont générés depuis ce SVG en **carré plein,
 sans coins arrondis** : iOS et Android appliquent leur propre masque, arrondir
@@ -310,8 +334,9 @@ installé, on passe par les outils macOS) :
 ```
 sed 's/ rx="24"//' _icon.svg > /tmp/sq.svg
 qlmanage -t -s 512 -o /tmp /tmp/sq.svg && sips -z 512 512 /tmp/sq.svg.png --out icon-512.png
+sips -z 192 192 /tmp/sq.svg.png --out icon-192.png
 ```
 
-Le fond du logo est anthracite, donc en thème sombre il se confond avec le fond
-de l'app : l'écran d'ouverture lui ajoute un contour clair pour l'en détacher.
-Ne pas retirer ce contour.
+Toute retouche se juge sur une planche à 300, 110, 60 et **40 px** — 40 px est la
+taille réelle sur un écran d'accueil. Le navigateur met `_icon.svg` en cache avec
+insistance : ajouter un paramètre d'horodatage à l'URL pendant la mise au point.

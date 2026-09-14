@@ -608,25 +608,40 @@ nav .nbadge.admin{background:var(--admin);color:var(--admin-ink)}
 
 <svg style="display:none">
 <symbol id="i-logo" viewBox="0 0 100 100">
-<rect width="100" height="100" rx="24" fill="var(--logo-bg,#1f1c19)"/>
- <!-- chat de profil, cadré serré et coupé par le bord bas, comme sur le dessin d'origine -->
+<rect width="100" height="100" rx="24" fill="var(--logo-bg,#221f1c)"/>
+ <!-- Chat assis de profil, tourné à droite. Le dos sort par le bord gauche, la
+      hanche et le poitrail par le bord bas. Les deux triangles noirs — en haut
+      à gauche, en bas à gauche — font l'assise du dessin : ne pas les combler.
+      Le profil de la face compte plus que tout : front presque vertical, léger
+      creux au stop, museau court et rond, encoche sous la truffe, menton net. -->
  <path fill="var(--logo-cat,#f6f4f0)" d="
-   M0 95
-   C0 70 4 46 19 34
-   C29 26 39 22 46 18
-   L52 4 L58.5 19 L66 10 L71.5 28
-   C75 34.5 76 40 74.5 45
-   L78.6 46.8 C80 49 78.6 51.6 76 51
-   L73.2 53.8 C69.6 57.4 64.4 60.6 60 64
-   C55 69.4 56 77.6 58.2 86
-   C59.6 92.4 60.4 96.4 61 100
-   L0 100 Z"/>
- <!-- œil en amande -->
- <ellipse cx="66.4" cy="37.4" rx="2.7" ry="4.6" fill="var(--logo-bg,#1f1c19)"
-   transform="rotate(-20 66.4 37.4)"/>
- <!-- repère de carte, chevauchant le poitrail -->
- <path fill="var(--logo-pin,#3b30d9)" d="M79 95 C79 95 65.5 80 65.5 71.2 a13.5 13.5 0 1 1 27 0 c0 8.8 -13.5 23.8 -13.5 23.8 Z"/>
- <circle cx="79" cy="70.2" r="6.2" fill="var(--logo-bg,#1f1c19)"/>
+   M0 53
+   C5 47 11 41 18.5 35.5
+   C26.5 29.5 34.5 24.5 41 21.2
+   C42 20.7 43 20.2 43.9 19.8
+   C45.7 15.2 48 10.4 49.9 7
+   C51 8.6 53.6 17.6 55.2 24.2
+   C57.1 20.4 59.6 15.6 61.5 12.8
+   C62.6 14.6 64.5 20.8 65.5 25
+   C67.4 28.2 68.6 31.2 68.6 34.2
+   C68.6 37 68.3 38.5 68.2 39.8
+   C69.6 41.4 72.9 44.8 73 46.9
+   C73 48.3 71.6 48.9 70.6 49.2
+   C71.6 49.9 72 50.4 71.8 51.1
+   C71.2 52.7 70 53.3 68.9 54
+   C66.7 55.6 64.4 56.9 62.2 57.7
+   C59.2 58.8 56.6 59.6 55.2 61
+   C53.8 62.4 53.2 64.2 53.7 66.8
+   C55 72.2 57.8 78.2 61.4 83.8
+   C64.8 89 68.9 95 71.8 100
+   L45 100
+   C31 95.8 15.5 87.6 0 79.4 Z"/>
+ <!-- œil en amande, incliné -->
+ <ellipse cx="62.1" cy="40.4" rx="2.2" ry="3.6" fill="var(--logo-bg,#221f1c)"
+   transform="rotate(-25 62.1 40.4)"/>
+ <!-- repère de carte, chevauchant le poitrail ; le trou est crème, pas noir -->
+ <path fill="var(--logo-pin,#3b30d9)" d="M76.7 90.5 C76.7 90.5 63.7 75.1 63.7 68.9 a13 13 0 1 1 26 0 c0 6.2 -13 21.6 -13 21.6 Z"/>
+ <circle cx="76.7" cy="68.9" r="6.3" fill="var(--logo-cat,#f6f4f0)"/>
 </symbol>
 <symbol id="i-paw" viewBox="0 0 24 24" fill="currentColor">
  <ellipse cx="6.3" cy="10" rx="2.2" ry="2.8"/><ellipse cx="10.8" cy="7" rx="2.2" ry="3"/>
@@ -1498,9 +1513,21 @@ $('#p-go').onclick=async()=>{
    ne sort jamais, et les couches (questionnaire, ajout de lieu) qui passent
    par-dessus et qu'on termine ou qu'on abandonne. */
 const PANES=3;
-function setPane(i,smooth){
+function setPane(i){
+ /* Saut direct, sans glissement animé. Deux raisons, vérifiées :
+    `scrollTo({behavior:'smooth'})` est ignoré sur un conteneur à aimantation
+    obligatoire, et une animation image par image dépend de
+    `requestAnimationFrame`, qui se met en pause dès que l'onglet passe en
+    arrière-plan — le bouton ne ferait alors plus rien du tout.
+    La barre du bas est le seul chemin hors du volet carte : elle doit marcher
+    en toutes circonstances. Le glissement au doigt garde, lui, l'inertie
+    native du navigateur. */
  const pg=$('#pager');
- pg.scrollTo({left:i*pg.clientWidth,behavior:smooth===false?'auto':'smooth'});
+ pg.scrollLeft=i*pg.clientWidth;
+ /* on bascule l'état tout de suite au lieu d'attendre l'observateur : lui ne
+    sert qu'au glissement du doigt, et il est suspendu quand l'onglet ne
+    s'affiche pas. `paneChanged` ne fait rien si le volet n'a pas changé. */
+ paneChanged(i);
 }
 function paneChanged(i){
  if(i===pane)return;
@@ -1529,8 +1556,8 @@ function closeView(){document.querySelectorAll('.view').forEach(x=>x.classList.r
 
 $('#fab').onclick=()=>$('#sh-pick').classList.add('on');
 $('#pick-place').onclick=()=>{$('#sh-pick').classList.remove('on');openView('place')};
-$('#add-x').onclick=()=>{closeView();setPane(1,false)};
-$('#place-x').onclick=()=>{closeView();setPane(0,false)};
+$('#add-x').onclick=()=>{closeView();setPane(1)};
+$('#place-x').onclick=()=>{closeView();setPane(0)};
 
 /* la liste : le quartier entier depuis la carte, ses propres fiches depuis le
    volet photo. Même rendu, deux portées. */
@@ -1941,7 +1968,7 @@ $('#intro-go').onclick=()=>{
  try{localStorage.setItem(INTRO,'1')}catch{}
  $('#intro').classList.remove('on');
  /* la demande d'accès à la caméra arrive maintenant, une fois l'app expliquée */
- setPane(1,false);camStart()};
+ setPane(1);camStart()};
 $('#intro-legal').onclick=e=>{e.preventDefault();$('#sh-legal').classList.add('on')};
 
 /* ---------- comptes ----------
