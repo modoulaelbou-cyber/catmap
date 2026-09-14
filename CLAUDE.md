@@ -249,10 +249,25 @@ et on voit la couture.
 
 Depuis le viseur : le déclencheur, la galerie, le changement de caméra, et
 « Mes publications » (bouton, ou balayage vers le haut — un geste en diagonale
-appartient au pager et ne doit pas l'ouvrir). Une photo prise ici ouvre toujours
-une **nouvelle** fiche : `startCatFrom()` fait `resetCat()` puis saute directement
-à « Sa couleur », la première étape venant d'être faite. « Un chat » depuis la
-carte ramène ici : il n'y a qu'une façon d'ajouter un chat.
+appartient au pager et ne doit pas l'ouvrir). « Un chat » depuis la carte ramène
+ici : il n'y a qu'une façon d'ajouter un chat.
+
+**Une photo passe toujours par la relecture avant le questionnaire** (`review()`,
+`.cam-rev`). L'image est figée en grand, avec « Reprendre » et « Continuer ». Le
+flou et le mauvais cadrage ne se voient qu'une fois l'image arrêtée, et c'est le
+pelage qu'elle doit montrer — reprendre là coûte un geste, s'en apercevoir à la
+fin coûte tout le parcours. C'est aussi là qu'arrive l'avertissement de photo
+trop sombre, au moment où il sert encore à quelque chose.
+
+On y montre **l'image redimensionnée qui sera enregistrée**, pas la capture
+brute : ce qu'on relit est donc bien ce qu'on garde. Le flux reste ouvert
+derrière (la vidéo est seulement mise en pause) pour que « Reprendre » soit
+instantané ; quitter le volet ferme la relecture et coupe le flux.
+
+Ensuite seulement, `startCatFrom()` fait `resetCat()` puis saute directement à
+« Sa couleur », la première étape venant d'être faite. La galerie suit le même
+chemin, et son « Reprendre » rouvre le sélecteur de fichiers plutôt que la
+caméra.
 
 Trois règles à ne pas défaire :
 

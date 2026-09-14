@@ -597,6 +597,29 @@ nav .nbadge.admin{background:var(--admin);color:var(--admin-ink)}
 .cam-flash.go{animation:camflash .34s ease}
 @keyframes camflash{from{opacity:.85}to{opacity:0}}
 
+/* ---- relecture de la photo ----
+   On ne part pas au questionnaire avec une photo qu'on n'a pas regardée : une
+   photo floue ou mal cadrée ne se voit qu'une fois figée, et c'est le pelage
+   qu'elle doit montrer. Reprendre ici coûte un geste ; le découvrir à la fin
+   coûte tout le parcours. */
+.cam-rev{position:absolute;inset:0;background:#000;display:none;z-index:3}
+.cam-rev.on{display:block}
+.cam-rev img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.cam-rev .veil{background:linear-gradient(#0000 55%,#000000d9)}
+.cam-rev-bar{position:absolute;left:16px;right:16px;bottom:24px;display:flex;gap:10px}
+.cam-rev-bar button{flex:1;border:0;font:inherit;font-size:15px;font-weight:700;
+ padding:16px;border-radius:100px;cursor:pointer;transition:transform .14s}
+.cam-rev-bar button:active{transform:scale(.96)}
+.rev-again{background:#ffffff2e;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+ color:#fff;box-shadow:inset 0 0 0 1px #ffffff40}
+.rev-ok{background:var(--brand);color:var(--brand-ink);flex:1.4}
+/* l'avertissement de photo sombre arrive ici, pas trois étapes plus loin */
+.cam-rev-warn{position:absolute;left:16px;right:16px;bottom:92px;display:none;
+ align-items:flex-start;gap:9px;padding:12px 14px;border-radius:var(--r);
+ background:rgba(217,45,32,.92);color:#fff;font-size:13px;line-height:1.4}
+.cam-rev-warn.on{display:flex}
+.cam-rev-warn svg{width:17px;height:17px;flex-shrink:0;margin-top:1px;stroke-width:2}
+
 /* caméra refusée, absente, ou page non sécurisée : jamais de cul-de-sac */
 .cam-deny{position:absolute;inset:0;background:var(--bg);color:var(--ink);display:none;
  flex-direction:column;align-items:center;justify-content:center;text-align:center;
@@ -740,6 +763,19 @@ nav .nbadge.admin{background:var(--admin);color:var(--admin-ink)}
   </div>
   <button class="cam-map" id="cam-mine"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 14.5 12 8.5l6 6"/></svg>Mes publications</button>
   <input type="file" id="camfile" accept="image/*" style="display:none">
+  <div class="cam-rev" id="cam-rev">
+    <img id="rev-img" alt="">
+    <div class="veil"></div>
+    <div class="cam-rev-warn" id="rev-warn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round"
+        stroke-linejoin="round"><use href="#i-alert"/></svg>
+      <span>Trop sombre pour distinguer sa couleur. Reprends-la si tu peux.</span>
+    </div>
+    <div class="cam-rev-bar">
+      <button class="rev-again" id="rev-again">Reprendre</button>
+      <button class="rev-ok" id="rev-ok">Continuer</button>
+    </div>
+  </div>
   <div class="cam-deny" id="cam-deny">
     <h2>Caméra indisponible</h2>
     <p>CatMap n'a pas accès à l'appareil photo. Tu peux l'autoriser dans les
@@ -1542,7 +1578,7 @@ function paneChanged(i){
  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',+b.dataset.i===i));
  /* le flux ne tourne que sur le volet photo : ailleurs, c'est de la batterie
     brûlée et le témoin d'enregistrement allumé pour rien */
- if(i===1)camStart();else camStop();
+ if(i===1)camStart();else{camStop();closeReview()}
  if(i===0)drawMap();
  if(i===2)drawMe();
 }
@@ -2140,6 +2176,32 @@ function startCatFrom(src){
  drawShots();openView('add');showStep(2);
 }
 
+/* ---------- relecture ----------
+   Une photo prise ne part pas directement au questionnaire : on la fige, on la
+   montre en grand, et on laisse le choix de la garder ou de recommencer. Le flou
+   et le mauvais cadrage ne se voient qu'une fois l'image arrêtée. */
+let revSrc=null,revFrom='cam';
+function review(src,from){
+ revSrc=src;revFrom=from;
+ /* on montre exactement l'image qui sera enregistrée, pas la capture brute :
+    ce qu'on relit est donc bien ce qu'on garde */
+ $('#rev-img').src=resize(src,900,.75);
+ $('#rev-warn').classList.toggle('on',meanLum(src)<58);
+ $('#cam-rev').classList.add('on');
+ /* on fige l'aperçu derrière : le flux reste ouvert pour que « Reprendre »
+    soit instantané, mais l'image ne bouge plus */
+ const v=$('#cam-v');if(v)v.pause();
+}
+function closeReview(){
+ $('#cam-rev').classList.remove('on');
+ $('#rev-warn').classList.remove('on');
+ $('#rev-img').removeAttribute('src');
+ revSrc=null;
+ const v=$('#cam-v');if(v&&camStream)v.play().catch(()=>{});
+}
+$('#rev-again').onclick=()=>{const f=revFrom;closeReview();if(f==='lib')$('#camfile').click()};
+$('#rev-ok').onclick=()=>{const src=revSrc;closeReview();if(src)startCatFrom(src)};
+
 $('#shutter').onclick=()=>{
  const v=$('#cam-v');
  if(!camStream||!v.videoWidth)return;
@@ -2148,7 +2210,7 @@ $('#shutter').onclick=()=>{
  cv.getContext('2d').drawImage(v,0,0);
  const fl=$('#cam-flash');fl.classList.remove('go');void fl.offsetWidth;fl.classList.add('go');
  if(navigator.vibrate)navigator.vibrate(12);
- startCatFrom(cv);
+ review(cv,'cam');
 };
 $('#cam-flip').onclick=()=>{
  camFacing=camFacing==='environment'?'user':'environment';
@@ -2158,7 +2220,7 @@ $('#cam-lib').onclick=$('#deny-lib').onclick=()=>$('#camfile').click();
 $('#camfile').onchange=e=>{
  const f=e.target.files[0];if(!f)return;
  const img=new Image(),r=new FileReader();
- r.onload=()=>{img.onload=()=>startCatFrom(img);img.src=r.result};
+ r.onload=()=>{img.onload=()=>review(img,'lib');img.src=r.result};
  r.readAsDataURL(f);e.target.value='';
 };
 $('#deny-map').onclick=()=>setPane(0);
