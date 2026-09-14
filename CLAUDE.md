@@ -171,7 +171,34 @@ L'app est utilisée dehors, à une main, souvent au soleil. Cibles tactiles larg
 
 ## Déploiement
 
-GitHub → Netlify, déploiement automatique à chaque push. Pas de build command, dossier de publication à la racine. HTTPS obligatoire : sans lui, ni la caméra ni le GPS ne fonctionnent.
+**GitHub Pages**, depuis la branche `main`, dossier racine :
+`https://modoulaelbou-cyber.github.io/catmap/`
+
+Un `git push` suffit — pas de commande de build, pas de minutes, pas de crédits.
+HTTPS obligatoire et fourni : sans lui, ni la caméra ni le GPS ne fonctionnent.
+
+Le fichier **`.nojekyll`** à la racine est indispensable : sans lui, GitHub Pages
+fait passer le site par Jekyll, qui **ignore tout fichier commençant par un
+underscore** — `_icon.svg` revenait en 404. Ne pas le supprimer.
+
+**Pourquoi plus Netlify** (2026-09-14). Le compte a épuisé son allocation de
+crédits gratuits et Netlify a **cessé de publier** en plein travail, sans rien
+casser de visible : le site restait en ligne, figé trois commits en arrière, ce
+qui est le pire des cas — on croit que ses changements ne marchent pas alors
+qu'ils ne sont simplement pas déployés. Netlify prévenait aussi que les sites
+publiés seraient suspendus si les crédits restants s'épuisaient. Le déploiement
+Netlify existe peut-être encore sur l'ancienne adresse, gelé ; il ne fait plus
+foi.
+
+Vérifier qu'un changement est bien en ligne, plutôt que de le supposer :
+
+```
+curl -s https://modoulaelbou-cyber.github.io/catmap/index.html | grep -c "un-bout-de-code-récent"
+```
+
+GitHub Pages sert le fichier **tel quel** — la somme de contrôle de la page en
+ligne doit être identique à celle du fichier local. Netlify, lui, injectait cinq
+lignes de publicité dans le HTML, ce qui empêchait cette comparaison directe.
 
 ## Admin et modération
 
